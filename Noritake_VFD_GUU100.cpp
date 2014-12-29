@@ -721,11 +721,16 @@ void Noritake_VFD_GUU100::_initPort (void)
 
 	// SPI enable, master mode, mode 3
 	SPCR = _BV (SPE) | _BV (MSTR) | _BV (CPOL) | _BV (CPHA);
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// at 20 mHz, SPI 2X is flakey on some modules (that is, the timing is close
+// to the limit). Experiment. If YOUR module works at 2X speed and 20 mHz, use it.
 #if F_CPU > 16000000UL
 	SPSR &= ~_BV (SPI2X);
 #else
 	SPSR |= _BV (SPI2X);
 #endif
+/////////////////////////////////////////////////////////////////////////////////////////
 
 #else // parallel mode
 
@@ -770,6 +775,7 @@ uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs, uint8_t chip)
 	C_PORT |= EN;
 
 	// delay (GU128X64E manual pg. 10) says ~300 ns, but 250 is way good enough
+	// experiment: remove a few NOPs and see if your module is stable, if so go with it.
 	asm volatile (
 		"\tnop\n" // for 8.0 MHz clock, 250 ns delay
 		"\tnop\n"
@@ -822,7 +828,7 @@ void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs, uint8_t chip)
 }
 
 #if GUU_MODE == 1 // SPI mode
-
+// you can also use a bit-bang SPI, but it's terribly S-L-O-W
 uint8_t Noritake_VFD_GUU100::_spiTransfer (uint8_t data)
 {
 	SPDR = data; // write to SPI data register
