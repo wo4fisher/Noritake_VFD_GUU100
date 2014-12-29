@@ -3,7 +3,7 @@
 //  Noritake GU128X64E-U100 VFD Display Driver Library for Arduino
 //  Copyright (c) 2012, 2014 Roger A. Krupski <rakrupski@verizon.net>
 //
-//  Last update: 09 December 2014
+//  Last update: 29 December 2014
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
