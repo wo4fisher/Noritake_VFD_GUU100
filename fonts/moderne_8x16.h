@@ -1,8 +1,29 @@
-/////////////////////////////////////////////
-// Noritake Bitmap Font "moderne_8x16"
-/////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Font "MODERNE_8X16.H" for the Noritake GU128X64E-U100 VFD display
+//  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program. If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////
 
-static const uint8_t moderne_8x16[] PROGMEM = {
+#ifndef MODERNE_8X16_H
+#define MODERNE_8X16_H
+
+#define moderne_8x16 pgm_get_far_address(_moderne_8x16)
+
+static const uint8_t _moderne_8x16[] PROGMEM = {
 
 	0x08, // width (base + 0)
 	0x10, // height (base + 1)
@@ -266,5 +287,8 @@ static const uint8_t moderne_8x16[] PROGMEM = {
 	0xfc, 0xfc, 0x04, 0x04, 0xfc, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x88, 0xc4, 0xe4, 0xbc, 0x98, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0xe0, 0xe0, 0xe0, 0xe0, 0xe0, 0xe0, 0x00, 0x00, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
+
+#endif
+

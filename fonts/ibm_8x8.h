@@ -1,8 +1,29 @@
-/////////////////////////////////////////////
-// Noritake Bitmap Font "ibm_8x8"
-/////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Font "IBM_8X8.H" for the Noritake GU128X64E-U100 VFD display
+//  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program. If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////
 
-static const uint8_t ibm_8x8[] PROGMEM = {
+#ifndef IBM_8X8_H
+#define IBM_8X8_H
+
+#define ibm_8x8 pgm_get_far_address(_ibm_8x8)
+
+static const uint8_t _ibm_8x8[] PROGMEM = {
 
 	0x08, // width (base + 0)
 	0x08, // height (base + 1)
@@ -266,5 +287,8 @@ static const uint8_t ibm_8x8[] PROGMEM = {
 	0x00, 0x1f, 0x1f, 0x01, 0x1f, 0x1e, 0x00, 0x00,
 	0x00, 0x19, 0x1d, 0x17, 0x12, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x3c, 0x3c, 0x3c, 0x3c, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0x08, 0x00, 0x40, 0x60, 0x74, 0x5c, 0x48, 0x00,
 };
+
+#endif
+

@@ -1,8 +1,29 @@
-/////////////////////////////////////////////
-// Noritake Bitmap Font "italics_8x16"
-/////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Font "ITALICS_8X16.H" for the Noritake GU128X64E-U100 VFD display
+//  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program. If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////
 
-static const uint8_t italics_8x16[] PROGMEM = {
+#ifndef ITALICS_8X16_H
+#define ITALICS_8X16_H
+
+#define italics_8x16 pgm_get_far_address(_italics_8x16)
+
+static const uint8_t _italics_8x16[] PROGMEM = {
 
 	0x08, // width (base + 0)
 	0x10, // height (base + 1)
@@ -266,5 +287,8 @@ static const uint8_t italics_8x16[] PROGMEM = {
 	0x60, 0x7a, 0x1e, 0x64, 0x7a, 0x1e, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x60, 0x74, 0x5a, 0x6e, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0xe0, 0xf0, 0xf0, 0xf0, 0xf0, 0x00, 0x00, 0x00, 0x07, 0x07, 0x07, 0x07, 0x03, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
+
+#endif
+
