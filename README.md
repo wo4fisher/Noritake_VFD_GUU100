@@ -1,5 +1,5 @@
-Noritake_VFD_GUU100
-===================
+Noritake_VFD_GUU100 - Major Update
+==================================
 
 Arduino drivers for the Noritake GU128X64E-U100 Vacuum Florescent Display Module.
 
