@@ -25,8 +25,8 @@
 void Noritake_VFD_GUU100::init (void)
 {
 	_initPort();  // initialize the SPI or parallel port
-	_displayWidth = 128; // init display...
-	_displayHeight = 64; // ... dimensions
+	_displayWidth = _DISPLAY_WIDTH; // init display...
+	_displayHeight = _DISPLAY_HEIGHT; // ... dimensions
 	_firstChar = 0; // zero out font info
 	_fontWidth = 0; // font bare pixel width
 	_fontHeight = 0; // font bare pixel height
@@ -151,10 +151,15 @@ void Noritake_VFD_GUU100::clearScreen (uint8_t pattern)
 	_setCursor (0, 0); // home cursor
 }
 
+void Noritake_VFD_GUU100::drawImage (const uint8_t *data, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
+{
+	drawImage (((uint32_t) data), x, y, width, height);
+}
+
 void Noritake_VFD_GUU100::drawImage (uint32_t data, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
 {
 	uint8_t mask, mix, ix, iy, y2;
-	uint16_t src;
+	uint16_t src; // must be 16 bit because of "<< 8" operations
 	uint32_t end;
 
 	if ((x < _displayWidth) && (y < _displayHeight)) {
@@ -402,7 +407,8 @@ void Noritake_VFD_GUU100::fillCircle (uint8_t cx, uint8_t cy, uint8_t radius, ui
 	uint8_t y;
 	x = 0;
 	y = radius;
-	drawLine (cx, cy - radius, cx, cy + radius, on);
+
+	drawLine (cx, cy - (radius - 1), cx, cy + (radius + 1), on);
 
 	while (x < y) {
 		if (f >= 0) {
@@ -421,8 +427,15 @@ void Noritake_VFD_GUU100::fillCircle (uint8_t cx, uint8_t cy, uint8_t radius, ui
 	}
 }
 
+void Noritake_VFD_GUU100::setFont (const uint8_t *fontPtr)
+{
+	// accept a 16 bit PROGMEM pointer
+	setFont ((uint32_t) fontPtr);
+}
+
 void Noritake_VFD_GUU100::setFont (uint32_t fontPtr)
 {
+	// accept a flat 32 bit pointer address
 	_font = _fontStart = fontPtr;
 
 	if (fontPtr) {
@@ -448,10 +461,10 @@ uint32_t Noritake_VFD_GUU100::getFont (void)
 
 void Noritake_VFD_GUU100::getFontDat (void *data)
 {
-	*((uint8_t *) (data + charWidth)) = _fontStart ? _next_x : 0;
-	*((uint8_t *) (data + charHeight)) = _fontStart ? _next_y : 0;
-	*((uint8_t *) (data + maxChars)) = _fontStart ? _displayWidth / _next_x : 0;
-	*((uint8_t *) (data + maxLines)) = _fontStart ? _displayHeight / _next_y : 0;
+	*((uint8_t *) data++) = _fontStart ? _next_x : 0; // character width
+	*((uint8_t *) data++) = _fontStart ? _next_y : 0; // character height
+	*((uint8_t *) data++) = _fontStart ? (_displayWidth / _next_x) : 0; // max chars per line
+	*((uint8_t *) data++) = _fontStart ? (_displayHeight / _next_y) : 0; // max lines
 }
 
 void Noritake_VFD_GUU100::home (uint8_t s)
@@ -567,7 +580,7 @@ size_t Noritake_VFD_GUU100::_noFont (void)
 	_tmp_z = (sizeof (msg) / sizeof (*msg)); // how many chars
 	clearScreen();  // clear any graphics off screen before message
 	home (1); // reset cursor x/y and zero scroll
-	drawImage (pgm_get_far_address (msg), _tmp_x, _tmp_y, _tmp_z, 8); // draw entire message as one graphic block
+	drawImage (msg, _tmp_x, _tmp_y, _tmp_z, 8); // draw entire message as one graphic block
 	return 0;
 }
 
@@ -738,10 +751,10 @@ inline void Noritake_VFD_GUU100::_initPort (void)
 	SPI_DDR &= ~_MISO; // MISO is input
 	SPI_DDR |= _SCK | _MOSI | _SS; // SCK, MOSI & SS are outputs
 	// SPI enable, master mode, mode 3
-	SPCR = _BV (SPE) | _BV (MSTR) | _BV (CPOL) | _BV (CPHA);
-	#if (! (F_CPU > 16000000UL))
-		SPSR |= _BV (SPI2X); // double speed SPI if F_CPU 16 or less
-	#endif
+	SPCR = (1ULL << (SPE)) | (1ULL << (MSTR)) | (1ULL << (CPOL)) | (1ULL << (CPHA));
+#if (! (F_CPU > 16000000UL))
+	SPSR |= (1ULL << (SPI2X)); // double speed SPI if F_CPU 16 or less
+#endif
 #else // parallel mode
 	// setup control pins
 	C_PORT &= ~ (RS | RW | EN | CS1 | CS2); // all low
@@ -778,15 +791,12 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 	asm volatile (
 		"\tnop\n"
 		"\tnop\n"
-		"\tnop\n" // 375 ns @ 8 MHz.
 	#if F_CPU > 8000000UL
-			"\tnop\n"
-			"\tnop\n"
-			"\tnop\n" // 375 ns @ 16 MHz.
-		#if F_CPU > 16000000UL
-				"\tnop\n"
-				"\tnop\n" // 400 ns @ 20+ MHz.
-		#endif
+		"\tnop\n"
+		"\tnop\n"
+	#if F_CPU > 16000000UL
+		"\tnop\n"
+	#endif
 	#endif
 	);
 	data = D_PIN; // read a byte from VFD
@@ -821,7 +831,7 @@ inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 inline uint8_t Noritake_VFD_GUU100::_spiTransfer (uint8_t data)
 {
 	SPDR = data; // write to SPI data register
-	while (! (SPSR & _BV (SPIF))); // wait for all of it to be shifted
+	while (! (SPSR & (1ULL << (SPIF)))); // wait for all of it to be shifted
 	return SPDR; // return read data
 }
 
