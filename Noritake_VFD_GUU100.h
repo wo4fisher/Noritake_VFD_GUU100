@@ -3,7 +3,7 @@
 //  Noritake GU128X64E-U100 VFD Display Driver Library for Arduino
 //  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
 //
-//  Last update: 18 June 2015
+//  Last update: 01 August 2015
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -20,11 +20,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef NORITAKE_VFD_GUU_H
-#define NORITAKE_VFD_GUU_H
-
-#define GUU_MODE 0 // parallel interface
-//#define GUU_MODE 1 // serial (SPI mode 3) interface
+#ifndef NORITAKE_VFD_GUU100_H
+#define NORITAKE_VFD_GUU100_H
 
 #if ARDUINO < 100
 	#include <WProgram.h>
@@ -48,98 +45,15 @@
 #define _DISPLAY_WIDTH 128 // change these if you need to...
 #define _DISPLAY_HEIGHT 64 // ...for some odd reason.
 
-#if defined(pgm_read_byte_far)
+#ifdef pgm_read_byte_far
 	#define PGM_READ pgm_read_byte_far
 #else
 	#define PGM_READ pgm_read_byte_near
 #endif
 
-//
-// Edit these defines if you want to use different pins. Note
-// that the parallel interface MUST be all on ONE PORT.
-//
-// Port addresses for the ATMEGA_328P _SFR_IO8 (0xNN)
-// NAME    PIN (input)   DDR (data dir)   PORT (write)
-// ====    ===========   ==============   ============
-//  B         0x03           0x04             0x05
-//  C         0x06           0x07             0x08
-//  D         0x09           0x0A             0x0B
-//
-// Port addresses for the ATMEGA_2560 _SFR_IO8 (0xNN)
-// NAME    PIN (input)   DDR (data dir)   PORT (write)
-// ====    ===========   ==============   ============
-//  A         0x00           0x01             0x02
-//  B         0x03           0x04             0x05
-//  C         0x06           0x07             0x08
-//  D         0x09           0x0A             0x0B
-//  E         0x0C           0x0D             0x0E
-//  F         0x0F           0x10             0x11
-//  G         0x12           0x13             0x14
-//
-
-#if GUU_MODE == 1 // serial (SPI) mode (slower)
-	#if ((defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)))
-		// MEGA control port for SPI
-		#define C_DDR  _SFR_IO8(0x10) // control port is
-		#define C_PORT _SFR_IO8(0x11) // PORT F
-		#define RST digitalPinToBitMask (A0) // reset pin A0
-		#define CS2 digitalPinToBitMask (A1) // chip select 2 pin A1
-		#define CS1 digitalPinToBitMask (A2) // chip select 1 pin A2
-		// MEGA SPI port
-		#define SPI_DDR  _SFR_IO8(0x04) // SPI port is
-		#define SPI_PORT _SFR_IO8(0x05) // PORT B
-		#define _MISO digitalPinToBitMask (50) // MISO pin 50
-		#define _MOSI digitalPinToBitMask (51) // MOSI pin 51
-		#define _SCK  digitalPinToBitMask (52) // SCK pin 52
-		#define _SS   digitalPinToBitMask (53) // SS pin 53
-	#else
-		// UNO control port for SPI
-		#define C_DDR  _SFR_IO8(0x07) // control port is
-		#define C_PORT _SFR_IO8(0x08) // PORT C
-		#define RST digitalPinToBitMask (A0) // reset pin A0
-		#define CS2 digitalPinToBitMask (A1) // chip select 2 pin A1
-		#define CS1 digitalPinToBitMask (A2) // chip select 1 pin A2
-		// UNO SPI port
-		#define SPI_DDR  _SFR_IO8(0x04) // SPI port is
-		#define SPI_PORT _SFR_IO8(0x05) // PORT B
-		#define _SS   digitalPinToBitMask (10) // SS pin 10
-		#define _MOSI digitalPinToBitMask (11) // MOSI pin 11
-		#define _MISO digitalPinToBitMask (12) // MISO pin 12
-		#define _SCK  digitalPinToBitMask (13) // SCK pin 13
-	#endif
-#else // parallel mode
-	#if ((defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)))
-		// MEGA control port for PARALLEL
-		#define D_PIN  _SFR_IO8(0x00) // data port is
-		#define D_DDR  _SFR_IO8(0x01) // PORT A
-		#define D_PORT _SFR_IO8(0x02) // pins 22...29
-		#define C_DDR  _SFR_IO8(0x07) // control port is
-		#define C_PORT _SFR_IO8(0x08) // PORT C
-		#define RST digitalPinToBitMask (35) // reset pin 35
-		#define CS2 digitalPinToBitMask (33) // chip select 2 pin 33
-		#define CS1 digitalPinToBitMask (31) // chip select 1 pin 31
-		#define EN  digitalPinToBitMask (34) // chip enable pin 34
-		#define RW  digitalPinToBitMask (32) // read / write pin 32
-		#define RS  digitalPinToBitMask (30) // register select pin 30
-	#else
-		// UNO control port for PARALLEL
-		#define D_PIN  _SFR_IO8(0x09) // data port is
-		#define D_DDR  _SFR_IO8(0x0A) // PORT D
-		#define D_PORT _SFR_IO8(0x0B) // pins 0...7
-		#define C_DDR  _SFR_IO8(0x07) // control port is
-		#define C_PORT _SFR_IO8(0x08) // PORT C
-		#define RST digitalPinToBitMask (A0) // reset pin A0
-		#define CS2 digitalPinToBitMask (A1) // chip select 2 pin A1
-		#define CS1 digitalPinToBitMask (A2) // chip select 1 pin A2
-		#define EN  digitalPinToBitMask (A3) // chip enable pin A3
-		#define RW  digitalPinToBitMask (A4) // read / write pin A4
-		#define RS  digitalPinToBitMask (A5) // register select pin A5
-	#endif
-#endif
-
 class Noritake_VFD_GUU100 : public Stream {
 	public:
-		void init (void);
+		void init (uint8_t = 0); // optional 1 = SPI mode
 		void setDisplay (uint8_t);
 		uint8_t setBrightness (uint8_t);
 		void setScroll (uint8_t);
@@ -153,7 +67,7 @@ class Noritake_VFD_GUU100 : public Stream {
 		void setDot (uint8_t, uint8_t, uint8_t);
 		uint8_t getDot (uint8_t, uint8_t);
 		void setInvert (uint8_t);
-		void clearScreen (uint8_t = 0);
+		void clearScreen (uint8_t = 0); // optional fill pattern
 		void drawImage (const uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
 		void drawImage (uint32_t, uint8_t, uint8_t, uint8_t, uint8_t);
 		void drawVect (uint8_t, uint8_t, uint8_t, long int, uint8_t);
@@ -168,7 +82,7 @@ class Noritake_VFD_GUU100 : public Stream {
 		void setFont (uint32_t);
 		uint32_t getFont (void);
 		void getFontDat (void *);
-		void home (uint8_t = 0);
+		void home (uint8_t = 0); // optional 1 = reset scroll also
 		virtual int available (void);
 		virtual int peek (void);
 		virtual int read (void);
@@ -198,8 +112,10 @@ class Noritake_VFD_GUU100 : public Stream {
 		uint8_t _fontsrc;
 		uint8_t _next_x;
 		uint8_t _next_y;
+		uint8_t _guu_mode;
 		// functions
 		size_t _noFont (void);
+		void _initIO (uint8_t);
 		void _writeDisplay (uint8_t);
 		inline uint8_t _bitsBetween (uint8_t, uint8_t);
 		inline void _writeData (uint8_t);
@@ -219,7 +135,9 @@ class Noritake_VFD_GUU100 : public Stream {
 		inline void _initPort (void);
 		inline uint8_t _readPort (uint8_t);
 		inline void _writePort (uint8_t, uint8_t);
-		inline uint8_t _spiTransfer (uint8_t = 0);
+		inline uint8_t _spiTransfer (uint8_t = 0); // dummy param for reads
 };
 
 #endif
+
+//////// end of Noritake_VFD_GUU100.h ////////
