@@ -1,5 +1,3 @@
-// allFonts.h
-
 #ifndef ALL_FONTS_H
 #define ALL_FONTS_H
 
