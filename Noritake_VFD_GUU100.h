@@ -65,14 +65,17 @@ public:
 	void getLine (double &, double &);
 	void setCursor (uint8_t, uint8_t);
 	void getCursor (uint8_t &, uint8_t &);
+	void pushCursor (void);
+	void popCursor (void);
 	void setPixel (uint16_t, uint8_t);
 	uint8_t getPixel (uint16_t);
 	void setDot (uint8_t, uint8_t, uint8_t);
 	uint8_t getDot (uint8_t, uint8_t);
 	void setInvert (uint8_t);
 	void invertScreen (void);
-	void clear (void);
-	void clearScreen (uint8_t = 0); // optional fill pattern
+	uint8_t clear (void);
+	uint8_t clearScreen (void);
+	uint8_t clearScreen (uint8_t);
 	void drawImage (const uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
 	void drawImage (uint32_t, uint8_t, uint8_t, uint8_t, uint8_t);
 	void drawPolygon (uint8_t, uint8_t, uint8_t, int, uint8_t, uint8_t);
@@ -88,18 +91,19 @@ public:
 	void screenSave (const char *);
 	void drawArc (uint8_t, uint8_t, uint8_t, int, int, uint8_t);
 	void drawArc (uint8_t, uint8_t, uint8_t, uint8_t, int, int, uint8_t);
-	void setFont (const uint8_t *, uint8_t = 0, uint8_t = 0);
-	void setFont (uint32_t, uint8_t = 0, uint8_t = 0);
+	void setFont (const uint8_t *);
+	void setFont (const uint8_t *, uint8_t, uint8_t);
+	void setFont (uint32_t);
+	void setFont (uint32_t, uint8_t, uint8_t);
 	uint32_t getFont (void);
 	void getFontDat (void *);
-	void home (uint8_t = 0); // optional 1 = reset scroll also
-
+	void home (void);
+	void home (uint8_t);
 	virtual int available (void);
 	virtual int peek (void);
 	virtual int read (void);
 	virtual void flush (void);
 	operator bool (void);
-
 	virtual size_t write (uint8_t);
 	using Print::write;
 private:
@@ -109,8 +113,12 @@ private:
 	#else
 	#define PGM_R pgm_read_byte_near
 	#endif
-	uint32_t _font;
+	uint32_t _fontData;
 	uint32_t _fontStart;
+	uint8_t _next_x;
+	uint8_t _next_y;
+	uint8_t _save_x;
+	uint8_t _save_y;
 	uint8_t _cur_x;
 	uint8_t _cur_y;
 	uint8_t _cur_z;
@@ -125,13 +133,14 @@ private:
 	uint8_t _fontVGap;
 	uint8_t _bytesPerChar;
 	uint8_t _invert;
-	uint8_t _fontsrc;
-	uint8_t _next_x;
-	uint8_t _next_y;
 	// private functions
 	void _delay_usec (uint32_t);
 	size_t _noFont (void);
 	void _writeDisplay (uint8_t);
+	inline size_t _carriageReturn (void);
+	inline size_t _lineFeed (void);
+	inline size_t _backSpace (void);
+	inline size_t _doTabs (uint8_t);
 	inline uint8_t _bitsBetween (uint8_t, uint8_t);
 	inline void _writeData (uint8_t);
 	inline uint8_t _readData (void);
@@ -143,10 +152,6 @@ private:
 	inline uint8_t _getBits (uint8_t, uint8_t);
 	inline uint8_t _align (uint8_t);
 	inline uint8_t _clip (uint8_t);
-	inline size_t _carriageReturn (void);
-	inline size_t _lineFeed (void);
-	inline size_t _backSpace (void);
-	inline size_t _doTabs (uint8_t);
 	inline void _initPort (void);
 	inline uint8_t _spiTransfer (uint8_t);
 	inline uint8_t _readPort (uint8_t);
