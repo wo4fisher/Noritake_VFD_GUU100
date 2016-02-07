@@ -45,9 +45,9 @@ void Noritake_VFD_GUU100::init (void)
 	_invert = 0; // display invert yes/no
 	_fontData = 0; // invalidate font address pointer
 	_fontStart = 0; // invalidate font start pointer
-	clearScreen(); // clear screen
 	setDisplay (1); // turn display on
 	setBrightness (100); // default brightness and cathode on
+	clearScreen(); // clear screen
 }
 
 // turn display on or off (filament stays on)
@@ -161,6 +161,20 @@ uint8_t Noritake_VFD_GUU100::getDot (uint8_t x, uint8_t y)
 	return (_getBits (x, y) & (1UL << (y % 8))) ? 1 : 0;
 }
 
+// get byte at X,Y
+uint8_t Noritake_VFD_GUU100::getByte (uint8_t x, uint8_t y)
+{
+	_setCursor (x, y);
+	return _readData();
+}
+
+// set byte at X,Y
+void Noritake_VFD_GUU100::setByte (uint8_t x, uint8_t y, uint8_t c)
+{
+	_setCursor (x, y);
+	_writeData (c);
+}
+
 // this makes drawing normal or inverted (negative)
 void Noritake_VFD_GUU100::setInvert (uint8_t inv)
 {
@@ -208,6 +222,33 @@ uint8_t Noritake_VFD_GUU100::clearScreen (uint8_t pattern)
 
 	return pattern;
 }
+/*********
+// get screen block at X,Y
+///////// BETA DO NOT USE YET !!!!!!!!!!!!!! //////////////
+void Noritake_VFD_GUU100::getImage (uint8_t *data, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
+{
+	uint8_t x1;
+	uint8_t y1;
+	uint8_t y2;
+	uint8_t *ptr;
+
+	if (width && height) {
+		ptr = data;
+		y1 = (y + height);
+		y2 = 8;
+		while (y1 > y2) {
+			y2 <<= 1;
+		}
+		for (y1 = y; y1 <= y2; y1+=8) {
+			for (x1 = x; x1 < (x + width); x1++) {
+				_setCursor (x1, y1);
+				*ptr = _readData ();
+				ptr++;
+			}
+		}
+	}
+}
+******/
 
 // draw an image pointed to by a 16 bit POINTER to data in PROGMEM
 void Noritake_VFD_GUU100::drawImage (const uint8_t *data, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
@@ -372,17 +413,71 @@ void Noritake_VFD_GUU100::drawVector (uint8_t x, uint8_t y, uint8_t radius, int 
 	drawLine (x, y, round (cos (theta) * radius) + x, round (sin (theta) * radius) + y, on);
 }
 
-// draw a line from X0,Y0 to X1,Y1
+// draw a line from X1,Y1 to X2,Y2
+// http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm
+void Noritake_VFD_GUU100::drawLine (uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t on)
+{
+	int delta_x, delta_y, ix, iy, error;
+
+	delta_x = (x2 - x1);
+	// if x1 == x2, then it does not matter what we set here
+	ix = ((delta_x > 0) - (delta_x < 0));
+	delta_x = (abs (delta_x) << 1);
+
+	delta_y = (y2 - y1);
+	// if y1 == y2, then it does not matter what we set here
+	iy = ((delta_y > 0) - (delta_y < 0));
+	delta_y = (abs (delta_y) << 1);
+
+	setDot (x1, y1, on);
+
+	if (delta_x >= delta_y) {
+		// error may go below zero
+		error = (delta_y - (delta_x >> 1));
+
+		while (x1 != x2) {
+			if ((error >= 0) && (error || (ix > 0))) {
+				error -= delta_x;
+				y1 += iy;
+			}
+
+			// else do nothing
+			error += delta_y;
+			x1 += ix;
+			setDot (x1, y1, on);
+		}
+
+	} else {
+		// error may go below zero
+		error = (delta_x - (delta_y >> 1));
+
+		while (y1 != y2) {
+			if ((error >= 0) && (error || (iy > 0))) {
+				error -= delta_y;
+				x1 += ix;
+			}
+
+			// else do nothing
+			error += delta_x;
+			y1 += iy;
+			setDot (x1, y1, on);
+		}
+	}
+}
+
+/***********
 void Noritake_VFD_GUU100::drawLine (uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t on)
 {
 	int dx, dy, sx, sy, er, e2;
+
 	x0 < x1 ? (dx = x1 - x0, sx = 1) : (dx = x0 - x1, sx = -1);
 	y0 < y1 ? (dy = y1 - y0, sy = 1) : (dy = y0 - y1, sy = -1);
-	er = (dx - dy);
 
-	while (! ((x0 == x1) && (y0 == y1))) {
+	er = dx - dy;
 
-		on ? _setDot (x0, y0, 1) : _setDot (x0, y0, 0);
+	while (x0 != x1 || y0 != y1) {
+
+		setDot (x0, y0, on);
 
 		e2 = (2 * er);
 
@@ -397,6 +492,7 @@ void Noritake_VFD_GUU100::drawLine (uint8_t x0, uint8_t y0, uint8_t x1, uint8_t 
 		}
 	}
 }
+*******/
 
 // draw a rectangle starting at X,Y with width and height as specified
 void Noritake_VFD_GUU100::drawRect (uint8_t x1, uint8_t y1, uint8_t width, uint8_t height, uint8_t on)
@@ -933,19 +1029,22 @@ size_t Noritake_VFD_GUU100::_noFont (void)
 // send a command to both "chips" with one call
 void Noritake_VFD_GUU100::_writeDisplay (uint8_t cmd)
 {
-	uint8_t _tmp_x;
+	uint8_t _tmp_x, _tmp_y;
 	_tmp_x = _cur_x;
+	_tmp_y = _cur_y;
 	_cur_x = 0;
+	_cur_y = 0;
 	_writePort (cmd, 0);
 	_cur_x = 64;
+	_cur_y = 0;
 	_writePort (cmd, 0);
-	_cur_x = _tmp_x;
+	_setCursor (_tmp_x, _tmp_y);
 }
 
 // align data (usually text) that crosses chip boundaries
 inline uint8_t Noritake_VFD_GUU100::_bitsBetween (uint8_t a, uint8_t b)
 {
-	if (a / 8 != b / 8) {
+	if ((a / 8) != (b / 8)) {
 		return ~((1UL << (a % 8)) - 1);
 
 	} else {
@@ -1163,7 +1262,6 @@ inline void Noritake_VFD_GUU100::_initPort (void)
 
 inline uint8_t Noritake_VFD_GUU100::_spiTransfer (uint8_t data)
 {
-
 	SPDR = data; // write to SPI data register
 	while (! (SPSR & _BV(SPIF))); // wait for all of it to be shifted
 	return SPDR; // return read data
@@ -1171,7 +1269,6 @@ inline uint8_t Noritake_VFD_GUU100::_spiTransfer (uint8_t data)
 
 inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 {
-
 	uint8_t data;
 	uint8_t chip = (_cur_x & _BV(6)); // select left or right side
 
@@ -1185,7 +1282,6 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 
 inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 {
-
 	uint8_t chip = (_cur_x & _BV(6)); // select left or right side
 
 	C_PORT &= chip ? ~CS2 : ~CS1; // assert active low CS1 or CS2
@@ -1197,4 +1293,5 @@ inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 #else
 #error _GUU_MODE NOT DEFINED OR INCORRECTLY DEFINED!!!
 #endif
+
 //////// end of Noritake_GUU100.cpp ////////

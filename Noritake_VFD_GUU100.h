@@ -70,12 +70,17 @@ public:
 	void setPixel (uint16_t, uint8_t);
 	uint8_t getPixel (uint16_t);
 	void setDot (uint8_t, uint8_t, uint8_t);
+	uint8_t getByte (uint8_t, uint8_t);
+	void setByte (uint8_t, uint8_t, uint8_t);
 	uint8_t getDot (uint8_t, uint8_t);
 	void setInvert (uint8_t);
 	void invertScreen (void);
 	uint8_t clear (void);
 	uint8_t clearScreen (void);
 	uint8_t clearScreen (uint8_t);
+//////////////////////////// BETA DO NOT USE YET !!!!!!!! ///////////////////////////
+//	void getImage (uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
+//////////////////////////// BETA DO NOT USE YET !!!!!!!! ///////////////////////////
 	void drawImage (const uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
 	void drawImage (uint32_t, uint8_t, uint8_t, uint8_t, uint8_t);
 	void drawPolygon (uint8_t, uint8_t, uint8_t, int, uint8_t, uint8_t);

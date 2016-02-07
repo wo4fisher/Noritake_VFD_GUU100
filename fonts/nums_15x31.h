@@ -27,7 +27,7 @@ static const uint8_t _nums_15x31[] PROGMEM = {
 
 	0x10, // width (base + 0)
 	0x20, // height (base + 1)
-	0x02, // horizontal gap (base + 2)
+	0x00, // horizontal gap (base + 2)
 	0x00, // vertical gap (base + 3)
 	0x20, // first char (base + 4)
 	0x3a, // last char (base + 5)
