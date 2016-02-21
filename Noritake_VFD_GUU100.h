@@ -159,7 +159,7 @@ private:
 	inline uint8_t _spiTransfer (uint8_t);
 	inline uint8_t _readPort (uint8_t);
 	inline void _writePort (uint8_t, uint8_t);
-	inline uint8_t _CU-UW_RW (uint8_t);
+	inline uint8_t _cu_uw_RW (uint8_t);
 };
 
 #endif
