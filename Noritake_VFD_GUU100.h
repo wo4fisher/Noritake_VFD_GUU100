@@ -1,9 +1,9 @@
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 //
 //  Noritake GU128X64E-U100 VFD Display Driver Library for Arduino
 //  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
 //
-//  Last update: 24 December 2015
+//  Last update: 21 February 2016
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -18,18 +18,13 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program. If not, see <http://www.gnu.org/licenses/>.
 //
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////////////////////////
-//  Configure the ports and pins to your liking if these are not suitable. For     //
-//  example, the UNO could use PORT D (pins 0 thru 7) for parallel data and maybe  //
-//  3 pins from PORT C (the analog input pins 0 thru 5) for the control port.      //
-//  Be sure to configure _GUU_MODE below for 0 (parallel) or 1 (serial SPI) mode.  //
-/////////////////////////////////////////////////////////////////////////////////////
-//                                                                                 //
-//       This library is currently setup for an Arduino MEGA 2560 board            //
-//                                                                                 //
-/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+//                                                                                   //
+//  This library is currently setup for an Arduino MEGA 2560 board in parallel mode  //
+//                                                                                   //
+///////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef NORITAKE_VFD_GUU100_H
 #define NORITAKE_VFD_GUU100_H
@@ -103,7 +98,7 @@ public:
 	void setFont (uint32_t);
 	void setFont (uint32_t, uint8_t, uint8_t);
 	uint32_t getFont (void);
-//	uint8_t getFontDat (const char *);
+	void getFontDat (const void *);
 	void getFontDat (void *);
 	void home (void);
 	void home (uint8_t);

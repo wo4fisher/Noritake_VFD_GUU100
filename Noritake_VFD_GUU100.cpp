@@ -3,7 +3,7 @@
 //  Noritake GU128X64E-U100 VFD Display Driver Library for Arduino
 //  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
 //
-//  Last update: 24 December 2015
+//  Last update: 21 February 2016
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 void Noritake_VFD_GUU100::init (void)
 {
 	_delay_usec (250000); // 250 msec time delay after powerup (GU128X64E manual pg. 17)
-	_initPort(); // initialize the SPI or parallel port (set in .h file)
+	_initPort(); // initialize the I/O port (set in .h file)
 	_displayWidth = 128; // init display...
 	_displayHeight = 64; // ... dimensions
 	_firstChar = 0; // zero out font info
