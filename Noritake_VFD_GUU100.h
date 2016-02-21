@@ -36,7 +36,7 @@
 #endif
 
 #define _GUU_MODE 0 // parallel mode
-//#define _GUU_MODE 1 // SPI mode 3
+//#define _GUU_MODE 1 // SPI mode
 //#define _GUU_MODE 2 // "Signal Separate" mode (not supported)
 //#define _GUU_MODE 3 // CU-UW mode
 
@@ -75,9 +75,7 @@ public:
 	uint8_t clear (void);
 	uint8_t clearScreen (void);
 	uint8_t clearScreen (uint8_t);
-//////////////////////////// BETA DO NOT USE YET !!!!!!!! ///////////////////////////
-//	void getImage (uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
-//////////////////////////// BETA DO NOT USE YET !!!!!!!! ///////////////////////////
+	uint16_t getBlock (uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
 	void drawImage (const uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
 	void drawImage (uint32_t, uint8_t, uint8_t, uint8_t, uint8_t);
 	void drawPolygon (uint8_t, uint8_t, uint8_t, int, uint8_t, uint8_t);

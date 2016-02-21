@@ -222,33 +222,28 @@ uint8_t Noritake_VFD_GUU100::clearScreen (uint8_t pattern)
 
 	return pattern;
 }
-/*********
-// get screen block at X,Y
-///////// BETA DO NOT USE YET !!!!!!!!!!!!!! //////////////
-void Noritake_VFD_GUU100::getImage (uint8_t *data, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-{
-	uint8_t x1;
-	uint8_t y1;
-	uint8_t y2;
-	uint8_t *ptr;
 
-	if (width && height) {
-		ptr = data;
-		y1 = (y + height);
-		y2 = 8;
-		while (y1 > y2) {
-			y2 <<= 1;
-		}
-		for (y1 = y; y1 <= y2; y1+=8) {
-			for (x1 = x; x1 < (x + width); x1++) {
-				_setCursor (x1, y1);
-				*ptr = _readData ();
-				ptr++;
-			}
+// get screen block at X,Y
+uint16_t Noritake_VFD_GUU100::getBlock (uint8_t *data, uint8_t x1, uint8_t y1, uint8_t width, uint8_t height)
+{
+	uint8_t *ptr;
+	uint8_t x2, y2;
+
+	y1 &= 0b11111000; // mask bottom 3 bits
+	ptr = data;
+
+	if (((height - y1) > _displayHeight) || ((width - x1) > _displayWidth)) {
+		return -1;
+	}
+
+	for (y2 = y1; y2 < (height - y1); y2 += 8) {
+		for (x2 = x1; x2 < (width - x1); x2++) {
+			*ptr++ = getByte(x2, y2); // get data
 		}
 	}
+
+	return (ptr - data);
 }
-******/
 
 // draw an image pointed to by a 16 bit POINTER to data in PROGMEM
 void Noritake_VFD_GUU100::drawImage (const uint8_t *data, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
