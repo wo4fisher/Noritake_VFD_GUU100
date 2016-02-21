@@ -218,7 +218,7 @@ uint8_t Noritake_VFD_GUU100::clearScreen (uint8_t pattern)
 		_writeData (pattern); // erase screen
 	}
 
-	home(); // home cursor
+	home (1); // home cursor & zero scroll
 
 	return pattern;
 }
@@ -465,35 +465,6 @@ void Noritake_VFD_GUU100::drawLine (uint8_t x1, uint8_t y1, uint8_t x2, uint8_t 
 	}
 }
 
-/***********
-void Noritake_VFD_GUU100::drawLine (uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t on)
-{
-	int dx, dy, sx, sy, er, e2;
-
-	x0 < x1 ? (dx = x1 - x0, sx = 1) : (dx = x0 - x1, sx = -1);
-	y0 < y1 ? (dy = y1 - y0, sy = 1) : (dy = y0 - y1, sy = -1);
-
-	er = dx - dy;
-
-	while (x0 != x1 || y0 != y1) {
-
-		setDot (x0, y0, on);
-
-		e2 = (2 * er);
-
-		if (e2 > -dy) {
-			er -= dy;
-			x0 += sx;
-		}
-
-		if (e2 < dx) {
-			er += dx;
-			y0 += sy;
-		}
-	}
-}
-*******/
-
 // draw a rectangle starting at X,Y with width and height as specified
 void Noritake_VFD_GUU100::drawRect (uint8_t x1, uint8_t y1, uint8_t width, uint8_t height, uint8_t on)
 {
@@ -526,7 +497,7 @@ void Noritake_VFD_GUU100::drawRoundRect (uint8_t cx, uint8_t cy, uint8_t width, 
 	int16_t tSwitch;
 	x = 0;
 	y = radius;
-	tSwitch = 3 - 2 * radius;
+	tSwitch = 3 - (2 * radius);
 
 	while (x <= y) {
 		on ? _setDot (cx + radius - x, cy + radius - y, 1) : _setDot (cx + radius - x, cy + radius - y, 0);
@@ -539,13 +510,11 @@ void Noritake_VFD_GUU100::drawRoundRect (uint8_t cx, uint8_t cy, uint8_t width, 
 		on ? _setDot (cx + radius - y, cy + height - radius + x, 1) : _setDot (cx + radius - y, cy + height - radius + x, 0);
 
 		if (tSwitch < 0) {
-			tSwitch += 4 * (x);
-
+			tSwitch += 2 * (x);
 		} else {
-			tSwitch += 4 * (x - y);
+			tSwitch += 2 * (x - y);
 			y--;
 		}
-
 		x++;
 	}
 
@@ -590,7 +559,7 @@ void Noritake_VFD_GUU100::drawEllipse (uint8_t x, uint8_t y, uint8_t width, uint
 void Noritake_VFD_GUU100::drawCircle (uint8_t cx, uint8_t cy, uint8_t radius, uint8_t on)
 {
 	///////////////////////////////////////////////////////////
-	// Stefan Gustavson (stegu@itn.liu.se) 2003-08-20 //
+	// Stefan Gustavson (stegu@itn.liu.se) 2003-08-20        //
 	// webstaff.itn.liu.se/~stegu/circle/circlealgorithm.pdf //
 	///////////////////////////////////////////////////////////
 	int x = 0;
@@ -635,7 +604,8 @@ void Noritake_VFD_GUU100::fillCircle (uint8_t x, uint8_t y, uint8_t radius, uint
 	uint8_t y1;
 	x1 = 0;
 	y1 = radius;
-	drawLine (x, y - (radius - 1), x, y + (radius + 1), on); // center vertical line
+
+	drawLine (x, (y - radius), x, (y + radius), on); // center vertical line
 
 	while (x1 < y1) {
 		if (f >= 0) {
@@ -776,17 +746,12 @@ uint32_t Noritake_VFD_GUU100::getFont (void)
 	return _fontStart;
 }
 
-// get font DATA:
-// character cell WIDTH.
-// character cell HEIGHT.
-// maximum characters per line that fit.
-// maximum lines per screen that fit.
-void Noritake_VFD_GUU100::getFontDat (void *data)
+void Noritake_VFD_GUU100::getFontDat (void *font_dat)
 {
-	*((uint8_t *) data + 0) = _fontStart ? _next_x : 0; // character width
-	*((uint8_t *) data + 1) = _fontStart ? _next_y : 0; // character height
-	*((uint8_t *) data + 2) = _fontStart ? (_displayWidth / _next_x) : 0; // max chars per line
-	*((uint8_t *) data + 3) = _fontStart ? (_displayHeight / _next_y) : 0; // max lines
+	*((uint8_t *)(font_dat + 0)) = _fontStart ? _next_x : 0; // character width
+	*((uint8_t *)(font_dat + 1)) = _fontStart ? _next_y : 0; // character height
+	*((uint8_t *)(font_dat + 2)) = _fontStart ? (_displayWidth / _next_x) : 0; // max chars per line
+	*((uint8_t *)(font_dat + 3)) = _fontStart ? (_displayHeight / _next_y) : 0; // max lines
 }
 
 void Noritake_VFD_GUU100::home (void)
@@ -1290,8 +1255,99 @@ inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 	C_PORT |= (CS1 | CS2); // de-assert both CS pins
 }
 
+/////////////////////////// NORITAKE SIGNAL SEPARATE MODE //////////////////////////
+// we don't support Noritake Mode 2
+#elif ( _GUU_MODE == 2 )
+#error Noritake Signal Separate Mode 2 not supported!
+
+///////////////////////////// NORITAKE CU-UW MODE HERE /////////////////////////////
+
+#elif ( _GUU_MODE == 3 )
+
+#define SISO 50 //
+#define CS   53 // define actual pins here
+#define SCK  52 //
+#define RST  99 //
+
+#define _SISO_PIN portInputRegister (digitalPinToPort (SISO))   // siso read
+#define _SISO_DDR portModeRegister (digitalPinToPort (SISO))    // siso ddr
+#define _SISO_PORT portOutputRegister (digitalPinToPort (SISO)) // siso write
+#define _SISO digitalPinToBitMask (SISO)                        // siso bit
+
+#define _CS_DDR portModeRegister (digitalPinToPort (CS))        // chip select (STB) ddr
+#define _CS_PORT portOutputRegister (digitalPinToPort (CS))     // chip select (STB) write
+#define _CS digitalPinToBitMask (CS)                            // chip select (STB) bit
+
+#define _SCK_DDR portModeRegister (digitalPinToPort (SCK))      // serial clock (SCK) ddr
+#define _SCK_PORT portOutputRegister (digitalPinToPort (SCK))   // serial clock (SCK) write
+#define _SCK digitalPinToBitMask (SCK)                          // serial clock (SCK) bit
+
+#define _RST_DDR portModeRegister (digitalPinToPort (RST))      // reset (RST) ddr
+#define _RST_PORT portOutputRegister (digitalPinToPort (RST))   // reset (RST) write
+#define _RST digitalPinToBitMask (RST)                          // reset (RST) bit
+
+#define _CS2_BIT _BV (3) // CS2 bit (right side)
+#define _CS1_BIT _BV (4) // CS1 bit (left side)
+
+inline void Noritake_VFD_GUU100::_initPort (void)
+{
+	*_CS_DDR |= _CS; // cs (stb) output
+	*_SCK_DDR |= _SCK; // sck output
+	*_SISO_DDR &= ~_SISO; // siso input
+	// hardware reset
+	*_RST_DDR |= _RST;
+	*_RST_PORT &= ~_RST;
+	_delay_usec (10); // assert reset for minimum 100 nsec (GU128X64E manual pg. 17)
+	*_RST_PORT |= _RST;
+	_delay_usec (100000); // now wait 100 msec (GU128X64E manual pg. 17)
+}
+
+inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
+{
+	uint8_t cmd;
+	rs ? cmd = 0xE2 : cmd = 0xE0; // select cmd/data w/rw bit clear
+	(_cur_x & _BV(6)) ? cmd |= _CS1_BIT : cmd |= _CS2_BIT;
+
+	*_CS_PORT &= ~_CS; // assert strobe
+	_CU-UW_RW (cmd); // send command via CU-UW mode
+	_CU-UW_RW (data); // send data via CU-UW mode
+	*_CS_PORT |= _CS; // de-assert strobe
+}
+
+inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
+{
+	uint8_t cmd;
+	uint8_t data;
+
+	rs ? cmd = 0xE6 : cmd = 0xE4; // select cmd/data w/rw bit set
+	(_cur_x & _BV(6)) ? cmd |= _CS1_BIT : cmd |= _CS2_BIT;
+
+	*_CS_PORT &= ~_CS; // assert strobe
+	_CU-UW_RW (cmd); // send command via CU-UW mode
+	data = _CU-UW_RW (0); // read data via CU-UW mode
+	*_CS_PORT |= _CS; // de-assert strobe
+	return data; // return read data
+}
+
+inline uint8_t Noritake_VFD_GUU100::_CU-UW_RW (uint8_t data)
+{
+	uint8_t bits = 8;
+
+	while (bits--) { // write out bits
+		*_SCK_PORT &= ~_SCK; // set sck low
+		*_SISO_DDR |= _SISO; // set siso DDR as output
+		(data & _BV (bits)) ? *_SISO_PORT |= _SISO : *_SISO_PORT &= ~_SISO; // write bit
+		*_SCK_PORT |= _SCK; // set sck high
+		*_SISO_DDR &= ~_SISO; // set siso DDR as input
+		(*_SISO_PIN & _SISO) ? data |= _BV (bits) : data &= ~_BV (bits); // read bit
+	}
+
+	return data;
+}
+
 #else
 #error _GUU_MODE NOT DEFINED OR INCORRECTLY DEFINED!!!
 #endif
 
 //////// end of Noritake_GUU100.cpp ////////
+

@@ -40,8 +40,10 @@
 #include <Arduino.h>
 #endif
 
-#define _GUU_MODE 0 // parallel
-//#define _GUU_MODE 1 // serial
+#define _GUU_MODE 0 // parallel mode
+//#define _GUU_MODE 1 // SPI mode 3
+//#define _GUU_MODE 2 // "Signal Separate" mode (not supported)
+//#define _GUU_MODE 3 // CU-UW mode
 
 // VFD commands (GU128X64E manual pg. 14..16)
 #define SETDISP  0b00111110 // display on/off (cathode not affected)
@@ -101,6 +103,7 @@ public:
 	void setFont (uint32_t);
 	void setFont (uint32_t, uint8_t, uint8_t);
 	uint32_t getFont (void);
+//	uint8_t getFontDat (const char *);
 	void getFontDat (void *);
 	void home (void);
 	void home (uint8_t);
@@ -161,6 +164,7 @@ private:
 	inline uint8_t _spiTransfer (uint8_t);
 	inline uint8_t _readPort (uint8_t);
 	inline void _writePort (uint8_t, uint8_t);
+	inline uint8_t _CU-UW_RW (uint8_t);
 };
 
 #endif
