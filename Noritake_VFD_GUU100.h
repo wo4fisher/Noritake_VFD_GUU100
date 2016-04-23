@@ -3,7 +3,7 @@
 //  Noritake GU128X64E-U100 VFD Display Driver Library for Arduino
 //  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
 //
-//  Last update: 21 February 2016
+//  Last update: 15 April 2016
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -18,12 +18,6 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program. If not, see <http://www.gnu.org/licenses/>.
 //
-///////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////
-//                                                                                   //
-//  This library is currently setup for an Arduino MEGA 2560 board in parallel mode  //
-//                                                                                   //
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef NORITAKE_VFD_GUU100_H
@@ -56,45 +50,45 @@ public:
 	void init (void);
 	void setDisplay (uint8_t);
 	uint8_t setBrightness (uint8_t);
-	void setScroll (uint8_t);
-	uint8_t getScroll (void);
+	void setScroll (int);
+	int getScroll (void);
 	void setLine (double, double);
 	void getLine (double &, double &);
-	void setCursor (uint8_t, uint8_t);
-	void getCursor (uint8_t &, uint8_t &);
+	void setCursor (int, int);
+	void getCursor (int &, int &);
 	void pushCursor (void);
 	void popCursor (void);
 	void setPixel (uint16_t, uint8_t);
 	uint8_t getPixel (uint16_t);
-	void setDot (uint8_t, uint8_t, uint8_t);
-	uint8_t getByte (uint8_t, uint8_t);
-	void setByte (uint8_t, uint8_t, uint8_t);
-	uint8_t getDot (uint8_t, uint8_t);
+	void setDot (int, int, uint8_t);
+	uint8_t getByte (int, int);
+	void setByte (int, int, uint8_t);
+	uint8_t getDot (int, int);
 	void setInvert (uint8_t);
 	void invertScreen (void);
 	uint8_t clear (void);
 	uint8_t clearScreen (void);
 	uint8_t clearScreen (uint8_t);
-	uint16_t getBlock (uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
-	void drawImage (const uint8_t *, uint8_t, uint8_t, uint8_t, uint8_t);
-	void drawImage (uint32_t, uint8_t, uint8_t, uint8_t, uint8_t);
-	void drawPolygon (uint8_t, uint8_t, uint8_t, int, uint8_t, uint8_t);
-	void drawVector (uint8_t, uint8_t, uint8_t, int, uint8_t);
-	void drawLine (uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
-	void drawRect (uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
-	void fillRect (uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
-	void drawRoundRect (uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
-	void drawEllipse (uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
-	void drawCircle (uint8_t, uint8_t, uint8_t, uint8_t);
-	void fillCircle (uint8_t, uint8_t, uint8_t, uint8_t);
+	uint16_t getBlock (uint8_t *, int, int, uint8_t, uint8_t);
+	void drawImage (const uint8_t *, int, int, uint8_t, uint8_t);
+	void drawImage (uint32_t, int, int, uint8_t, uint8_t);
+	void drawPolygon (int, int, uint8_t, int, uint8_t, uint8_t);
+	void drawVector (int, int, uint8_t, int, uint8_t);
+	void drawLine (int, int, int, int, uint8_t);
+	void drawRect (int, int, uint8_t, uint8_t, uint8_t);
+	void fillRect (int, int, uint8_t, uint8_t, uint8_t);
+	void drawRoundRect (int, int, uint8_t, uint8_t, uint8_t, uint8_t);
+	void drawEllipse (int, int, uint8_t, uint8_t, uint8_t);
+	void drawCircle (int, int, uint8_t, uint8_t);
+	void fillCircle (int, int, uint8_t, uint8_t);
 	void screenSave (void);
 	void screenSave (const char *);
-	void drawArc (uint8_t, uint8_t, uint8_t, int, int, uint8_t);
-	void drawArc (uint8_t, uint8_t, uint8_t, uint8_t, int, int, uint8_t);
+	void drawArc (int, int, uint8_t, int, int, uint8_t);
+	void drawArc (int, int, uint8_t, uint8_t, int, int, uint8_t);
 	void setFont (const uint8_t *);
-	void setFont (const uint8_t *, uint8_t, uint8_t);
+	void setFont (const uint8_t *, int, int);
 	void setFont (uint32_t);
-	void setFont (uint32_t, uint8_t, uint8_t);
+	void setFont (uint32_t, int, int);
 	uint32_t getFont (void);
 	void getFontDat (const void *);
 	void getFontDat (void *);
@@ -110,19 +104,19 @@ public:
 private:
 	// private variables
 	#ifdef pgm_read_byte_far
-	#define PGM_R pgm_read_byte_far
+	#define PGM_READ_BYTE pgm_read_byte_far
 	#else
-	#define PGM_R pgm_read_byte_near
+	#define PGM_READ_BYTE pgm_read_byte_near
 	#endif
 	uint32_t _fontData;
 	uint32_t _fontStart;
 	uint8_t _next_x;
 	uint8_t _next_y;
-	uint8_t _save_x;
-	uint8_t _save_y;
-	uint8_t _cur_x;
-	uint8_t _cur_y;
-	uint8_t _cur_z;
+	int _save_x;
+	int _save_y;
+	int _cur_x;
+	int _cur_y;
+	int _cur_z;
 	uint8_t _displayHeight;
 	uint8_t _displayWidth;
 	uint8_t _displayBright;
@@ -147,10 +141,10 @@ private:
 	inline uint8_t _readData (void);
 	inline void _writeCmd (uint8_t);
 	inline void _increment (void);
-	inline void _setDot (uint8_t, uint8_t, uint8_t);
-	inline void _setCursor (uint8_t, uint8_t);
-	inline void _setScroll (uint8_t);
-	inline uint8_t _getBits (uint8_t, uint8_t);
+	inline void _setDot (int, int, uint8_t);
+	inline void _setCursor (int, int);
+	inline void _setScroll (int);
+	inline uint8_t _getBits (int, int);
 	inline uint8_t _align (uint8_t);
 	inline uint8_t _clip (uint8_t);
 	inline void _initPort (void);
