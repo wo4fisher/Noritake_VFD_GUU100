@@ -657,8 +657,9 @@ void Noritake_VFD_GUU100::screenSave (const char *str)
 		0x3e, 0x41, 0x41, 0x51, 0x32, 0x00, // G
 	};
 	setInvert (0); // insure normal pixel polarity
-	setBrightness (100); // be sure cathode is on and display is bright
-	clearScreen(); // clear any graphics off screen before message
+	setBrightness (100); // max brightness
+	setDisplay (1); // display on
+	clearScreen(); // clear screen before message
 
 	// print "TOO LONG" if custom string won't fit on one line
 	if ((strlen (str) * _next_x) > _displayWidth) {
