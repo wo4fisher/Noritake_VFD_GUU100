@@ -3,7 +3,7 @@
 //  Noritake GU128X64E-U100 VFD Display Driver Library for Arduino
 //  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
 //
-//  Last update: 15 April 2016
+//  Last update: 19 July 2016
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -29,11 +29,6 @@
 #include <Arduino.h>
 #endif
 
-#define _GUU_MODE 0 // parallel mode
-//#define _GUU_MODE 1 // SPI mode
-//#define _GUU_MODE 2 // "Signal Separate" mode (not supported)
-//#define _GUU_MODE 3 // CU-UW mode
-
 // VFD commands (GU128X64E manual pg. 14..16)
 #define SETDISP  0b00111110 // display on/off (cathode not affected)
 #define SETADDR  0b01000000 // horizontal byte select 0..63 (X)
@@ -48,6 +43,7 @@
 class Noritake_VFD_GUU100 : public Stream {
 public:
 	void init (void);
+	void init (uint8_t, uint8_t);
 	void setDisplay (uint8_t);
 	uint8_t setBrightness (uint8_t);
 	void setScroll (int);
@@ -90,8 +86,10 @@ public:
 	void setFont (uint32_t);
 	void setFont (uint32_t, int, int);
 	uint32_t getFont (void);
-	void getFontDat (const void *);
-	void getFontDat (void *);
+	uint8_t getCharWidth (void);
+	uint8_t getCharHeight (void);
+	uint8_t getMaxChars (void);
+	uint8_t getMaxLines (void);
 	void home (void);
 	void home (uint8_t);
 	virtual int available (void);
@@ -147,6 +145,7 @@ private:
 	inline uint8_t _getBits (int, int);
 	inline uint8_t _align (uint8_t);
 	inline uint8_t _clip (uint8_t);
+	// these are in the IO config files
 	inline void _initPort (void);
 	inline uint8_t _spiTransfer (uint8_t);
 	inline uint8_t _readPort (uint8_t);
@@ -154,5 +153,9 @@ private:
 	inline uint8_t _cu_uw_RW (uint8_t);
 };
 
+#include "config.h"
+
 #endif
+
 //////// end of Noritake_GUU100.h ////////
+
