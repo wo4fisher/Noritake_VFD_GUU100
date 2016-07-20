@@ -812,37 +812,37 @@ inline size_t Noritake_VFD_GUU100::write (uint8_t c)
 	}
 
 	switch (c) {
-			// backup one space, erase last char
+		// backup one space, erase last char
 		case 0x08: {
-				return _backSpace();
-			}
+			return _backSpace();
+		}
 
-			// tabs are 4 spaces (maybe useful for lining stuff up?)
+		// tabs are 4 spaces (maybe useful for lining stuff up?)
 		case 0x09: {
-				return _doTabs (4);
-			}
+			return _doTabs (4);
+		}
 
-			// drop down to the next line (column position remains
-			// unchanged). For newline you need CR and LF
+		// drop down to the next line (column position remains
+		// unchanged). For newline you need CR and LF
 		case 0x0A: {
-				return _lineFeed();
-			}
+			return _lineFeed();
+		}
 
-			// erase the screen (fill with spaces)
+		// erase the screen (fill with spaces)
 		case 0x0C: {
-				return clearScreen();
-			}
+			return clearScreen();
+		}
 
-			// restore the cursor to the lefthand most position
-			// (line position remains unchanged)
+		// set the cursor to the lefthand most position
+		// (line position remains unchanged)
 		case 0x0D: {
-				return _carriageReturn();
-			}
+			return _carriageReturn();
+		}
 
-			// anything else is a printable ascii character
+		// anything else is a printable ascii character
 		default: {
-				break;
-			}
+			break;
+		}
 	}
 
 	// check this AFTER so that control codes always
