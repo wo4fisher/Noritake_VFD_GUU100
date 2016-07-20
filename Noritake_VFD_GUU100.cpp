@@ -25,16 +25,10 @@
 // init driver variables and setup display
 void Noritake_VFD_GUU100::init (void)
 {
-	init (128, 64);
-}
-
-// init driver variables and setup display
-void Noritake_VFD_GUU100::init (uint8_t width, uint8_t height)
-{
 	_delay_usec (250000); // 250 msec time delay after powerup (GU128X64E manual pg. 17)
 	_initPort(); // initialize the I/O port (set in .h file)
-	_displayWidth = width; // init display...
-	_displayHeight = height; // ... dimensions
+	_displayWidth = 128; // init display...
+	_displayHeight = 64; // ... dimensions
 	_firstChar = 0; // zero out font info
 	_fontWidth = 0; // font bare pixel width
 	_fontHeight = 0; // font bare pixel height

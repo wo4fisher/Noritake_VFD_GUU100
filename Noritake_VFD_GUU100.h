@@ -43,7 +43,6 @@
 class Noritake_VFD_GUU100 : public Stream {
 public:
 	void init (void);
-	void init (uint8_t, uint8_t);
 	void setDisplay (uint8_t);
 	uint8_t setBrightness (uint8_t);
 	void setScroll (int);
