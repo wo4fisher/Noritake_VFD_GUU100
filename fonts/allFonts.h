@@ -37,4 +37,4 @@
 #include "thin_8x8.h"
 #include "tseng_8x16.h"
 
-#endif
+#endif // #ifndef ALL_FONTS_H

@@ -28,52 +28,64 @@
 #else
 
 #define SISO 50 //
-#define CS 53   // these are MEGA2560 pins
-#define SCK 52  // define actual pins here
-#define RST 99  //
+#define CS   53 // these are MEGA2560 pins
+#define SCK  52 // define actual pins used here
+#define RST  99 //
 
-#define _SISO_PIN portInputRegister (digitalPinToPort (SISO)) // siso read
-#define _SISO_DDR portModeRegister (digitalPinToPort (SISO)) // siso ddr
-#define _SISO_PORT portOutputRegister (digitalPinToPort (SISO)) // siso write
-#define _SISO digitalPinToBitMask (SISO) // siso bit
+#define SISO_PIN portInputRegister (digitalPinToPort (SISO)) // siso read
+#define SISO_DDR portModeRegister (digitalPinToPort (SISO)) // siso ddr
+#define SISO_PORT portOutputRegister (digitalPinToPort (SISO)) // siso write
+#define SISO_BIT digitalPinToBitMask (SISO) // siso bit
 
-#define _CS_DDR portModeRegister (digitalPinToPort (CS)) // chip select (STB) ddr
-#define _CS_PORT portOutputRegister (digitalPinToPort (CS)) // chip select (STB) write
-#define _CS digitalPinToBitMask (CS) // chip select (STB) bit
+#define CS_DDR portModeRegister (digitalPinToPort (CS)) // chip select (STB) ddr
+#define CS_PORT portOutputRegister (digitalPinToPort (CS)) // chip select (STB) write
+#define CS_BIT digitalPinToBitMask (CS) // chip select (STB) bit
 
-#define _SCK_DDR portModeRegister (digitalPinToPort (SCK)) // serial clock (SCK) ddr
-#define _SCK_PORT portOutputRegister (digitalPinToPort (SCK)) // serial clock (SCK) write
-#define _SCK digitalPinToBitMask (SCK) // serial clock (SCK) bit
+#define SCK_DDR portModeRegister (digitalPinToPort (SCK)) // serial clock (SCK) ddr
+#define SCK_PORT portOutputRegister (digitalPinToPort (SCK)) // serial clock (SCK) write
+#define SCK_BIT digitalPinToBitMask (SCK) // serial clock (SCK) bit
 
-#define _RST_DDR portModeRegister (digitalPinToPort (RST)) // reset (RST) ddr
-#define _RST_PORT portOutputRegister (digitalPinToPort (RST)) // reset (RST) write
-#define _RST digitalPinToBitMask (RST) // reset (RST) bit
+#define RST_DDR portModeRegister (digitalPinToPort (RST)) // reset (RST) ddr
+#define RST_PORT portOutputRegister (digitalPinToPort (RST)) // reset (RST) write
+#define RST_BIT digitalPinToBitMask (RST) // reset (RST) bit
 
-#define _CS2_BIT _BV (3) // CS2 bit (right side)
-#define _CS1_BIT _BV (4) // CS1 bit (left side)
+#define CS2_BIT _BV (3) // CS2 bit (right side)
+#define CS1_BIT _BV (4) // CS1 bit (left side)
 
 inline void Noritake_VFD_GUU100::_initPort (void)
 {
-	*_CS_DDR |= _CS; // cs (stb) output
-	*_SCK_DDR |= _SCK; // sck output
-	*_SISO_DDR &= ~_SISO; // siso input
-	// hardware reset
-	*_RST_DDR |= _RST;
-	*_RST_PORT &= ~_RST;
-	_delay_usec (10); // assert reset for minimum 100 nsec (GU128X64E manual pg. 17)
-	*_RST_PORT |= _RST;
-	_delay_usec (100000); // now wait 100 msec (GU128X64E manual pg. 17)
+	// config I/O pins
+	*CS_PORT |= CS_BIT; // cs (stb) default high
+	*SCK_PORT |= SCK_BIT; // sck default high
+	*SISO_PORT &= ~SISO_BIT; // siso default low
+	*RST_PORT |= RST_BIT; // reset default high
+
+	// config I/O ddr's
+	*CS_DDR |= CS_BIT; // cs (stb) output
+	*SCK_DDR |= SCK_BIT; // sck output
+	*SISO_DDR &= ~SISO_BIT; // siso input
+	*RST_DDR |= RST_BIT; // reset output
+
+	// 100 msec delay after powerup (GU128X64E manual pg. 17)
+	// (doubled to 200 msec for good luck)
+	__builtin_avr_delay_cycles ((F_CPU / 1e3) * 200);
+
+	// assert HW reset for minimum 250 nsec (GU128X64E manual pg. 17)
+	// (doubled to 500 nsec for good luck)
+	*RST_PORT &= ~RST_BIT;
+	__builtin_avr_delay_cycles ((F_CPU / 1e9) * 500);
+	*RST_PORT |= RST_BIT;
 }
 
 inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 {
 	uint8_t cmd;
 	rs ? cmd = 0xE2 : cmd = 0xE0; // select cmd/data w/rw bit clear
-	(_cur_x & _BV (6)) ? cmd |= _CS1_BIT : cmd |= _CS2_BIT;
-	*_CS_PORT &= ~_CS; // assert strobe
+	(_cur_x & _BV (6)) ? cmd |= CS1_BIT : cmd |= CS2_BIT;
+	*CS_PORT &= ~CS_BIT; // assert strobe
 	_cu_uw_RW (cmd); // send command via CU-UW mode
 	_cu_uw_RW (data); // send data via CU-UW mode
-	*_CS_PORT |= _CS; // de-assert strobe
+	*CS_PORT |= CS_BIT; // de-assert strobe
 }
 
 inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
@@ -81,11 +93,11 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 	uint8_t cmd;
 	uint8_t data;
 	rs ? cmd = 0xE6 : cmd = 0xE4; // select cmd/data w/rw bit set
-	(_cur_x & _BV (6)) ? cmd |= _CS1_BIT : cmd |= _CS2_BIT;
-	*_CS_PORT &= ~_CS; // assert strobe
+	(_cur_x & _BV (6)) ? cmd |= CS1_BIT : cmd |= CS2_BIT;
+	*CS_PORT &= ~CS_BIT; // assert strobe
 	_cu_uw_RW (cmd); // send command via CU-UW mode
 	data = _cu_uw_RW (0); // read data via CU-UW mode
-	*_CS_PORT |= _CS; // de-assert strobe
+	*CS_PORT |= CS_BIT; // de-assert strobe
 	return data; // return read data
 }
 
@@ -94,19 +106,18 @@ inline uint8_t Noritake_VFD_GUU100::_cu_uw_RW (uint8_t data)
 	uint8_t bits = 8;
 
 	while (bits--) { // write out bits
-		*_SCK_PORT &= ~_SCK; // set sck low
-		*_SISO_DDR |= _SISO; // set siso DDR as output
-		(data & _BV (bits)) ? *_SISO_PORT |= _SISO : *_SISO_PORT &= ~_SISO; // write bit
-		*_SCK_PORT |= _SCK; // set sck high
-		*_SISO_DDR &= ~_SISO; // set siso DDR as input
-		(*_SISO_PIN & _SISO) ? data |= _BV (bits) : data &= ~_BV (bits); // read bit
+		*SCK_PORT &= ~SCK_BIT; // set sck low
+		*SISO_DDR |= SISO_BIT; // set siso DDR as output
+		(data & _BV (bits)) ? *SISO_PORT |= SISO_BIT : *SISO_PORT &= ~SISO_BIT; // write bit
+		*SCK_PORT |= SCK_BIT; // set sck high
+		*SISO_DDR &= ~SISO_BIT; // set siso DDR as input
+		(*SISO_PIN & SISO_BIT) ? data |= _BV (bits) : data &= ~_BV (bits); // read bit
 	}
 
 	return data;
 }
 
 #endif // #if (defined(....
-
 #endif // #ifndef CU_UW_MODE_H
 
 // end cu-uw_mode.h

@@ -24,6 +24,15 @@
 #define IO_CONFIG_FILE_H
 
 ///////////////////////////////////////////////////////////////////////////////////////
+// If you need every last byte of flash, comment out the "#pragma GCC optimize"
+// line below. Realize that this will slow down the VFD performance by about
+// 20 percent (but uses about 1K less flash memory)
+///////////////////////////////////////////////////////////////////////////////////////
+#if defined(__GNUC__)
+#pragma GCC optimize ("Ofast")
+#endif
+
+///////////////////////////////////////////////////////////////////////////////////////
 // Include the file corresponding to the IO mode you have your GU128X64E-U100
 // display module set to. More than one mode at once MUST NOT be included.
 // NOTE: "Signal separate" mode (pg. 9) is not supported because it does not

@@ -27,15 +27,21 @@
 #error >>>>>> ONLY ONE MODE MAY BE DEFINED - EDIT "config.h" <<<<<<
 #else
 
-#define C_PIN PINF // control port is
 #define C_DDR DDRF // PORT F
 #define C_PORT PORTF // pins A0-A2
 #define RST digitalPinToBitMask (A0) // RST = pin A0
 #define CS2 digitalPinToBitMask (A1) // CS2 = pin A1
 #define CS1 digitalPinToBitMask (A2) // CS1 = pin A2
-#define SPI_DDR DDRB // SPI port is
+
+//#define C_DDR DDRK // PORT K
+//#define C_PORT PORTK // pins A8-A10
+//#define RST digitalPinToBitMask (A8) // RST = pin A8
+//#define CS2 digitalPinToBitMask (A9) // CS2 = pin A9
+//#define CS1 digitalPinToBitMask (A10) // CS1 = pin A10
+
+#define SPI_DDR DDRB // SPI uses
 #define SPI_PORT PORTB // PORT B
-#define _MISO digitalPinToBitMask (50) // MISO = pin 50
+#define _MISO digitalPinToBitMask (50) // MISO = pin 50 (MEGA2560)
 #define _MOSI digitalPinToBitMask (51) // MOSI = pin 51
 #define _SCK digitalPinToBitMask (52) // SCK = pin 52
 #define _SS digitalPinToBitMask (53) // SS = pin 53
@@ -52,13 +58,21 @@ inline void Noritake_VFD_GUU100::_initPort (void)
 
 	// SPI enable, master mode, mode 3
 	SPCR = (_BV (SPE) | _BV (MSTR) | _BV (CPOL) | _BV (CPHA));
-	SPSR |= _BV (SPI2X); // double speed SPI
 
-	// hardware reset
+	// SPI 2X speed is flakey above 16 mhz... try it if you want.
+#if (! ( F_CPU > 16000000UL ))
+	SPSR |= _BV (SPI2X); // double speed SPI
+#endif
+
+	// 100 msec delay after powerup (GU128X64E manual pg. 17)
+	// (doubled to 200 msec for good luck)
+	__builtin_avr_delay_cycles ((F_CPU / 1e3) * 200);
+
+	// assert HW reset for minimum 250 nsec (GU128X64E manual pg. 17)
+	// (doubled to 500 nsec for good luck)
 	C_PORT &= ~RST;
-	_delay_usec (10); // assert reset for minimum 100 nsec (GU128X64E manual pg. 17)
+	__builtin_avr_delay_cycles ((F_CPU / 1e9) * 500);
 	C_PORT |= RST;
-	_delay_usec (100000); // now wait 100 msec (GU128X64E manual pg. 17)
 }
 
 inline uint8_t Noritake_VFD_GUU100::_spiTransfer (uint8_t data)
@@ -89,7 +103,6 @@ inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 }
 
 #endif // #if (defined(....
-
 #endif // #ifndef SPI_MODE_H
 
 // end spi_mode.h
