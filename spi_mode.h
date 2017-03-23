@@ -60,7 +60,7 @@ inline void Noritake_VFD_GUU100::_initPort (void)
 	SPCR = (_BV (SPE) | _BV (MSTR) | _BV (CPOL) | _BV (CPHA));
 
 	// SPI 2X speed is flakey above 16 mhz on the VFD... try it if you want.
-#if (! ( F_CPU > 16000000UL ))
+#if (! (F_CPU > 16000000UL))
 	SPSR |= _BV (SPI2X); // double speed SPI
 #endif
 

@@ -46,9 +46,9 @@
 
 // Screen saver polygon defs (when text is not supplied
 #define MIN_RADIUS 8 // less than 8 it's hard to see the polygon shape
-#define MAX_RADIUS 32 // should be no larger than 1/2 screen height
+#define MAX_RADIUS 31 // should be no larger than 1/2 screen height
 #define MIN_SIDES 3 // obviously!
-#define MAX_SIDES 8 // more than 8 sides looks more like a circle
+#define MAX_SIDES 9 // more than 9 sides looks more like a circle
 
 // swap utility
 #define swap(x,y){x^=y;y^=x;x^=y;}
@@ -64,6 +64,8 @@ class Noritake_VFD_GUU100 : public Stream {
 		void getLine (double &x, double &y);
 		void setCursor (int, int);
 		void getCursor (int &x, int &y);
+		void pushCursor (void);
+		void popCursor (void);
 		void setDot (int, int, uint8_t);
 		uint8_t getDot (int, int);
 		void setInvert (uint8_t);
@@ -85,6 +87,8 @@ class Noritake_VFD_GUU100 : public Stream {
 		void drawArc (int, int, uint8_t, uint8_t, int, int, uint8_t);
 		void screenSave (void);
 		void screenSave (const char *);
+		void pushFont (void);
+		void popFont (void);
 		void setFont (const uint8_t *, int8_t=0, int8_t=0);
 		void setFont (uint32_t, int8_t=0, int8_t=0);
 		uint32_t getFont (void);
@@ -113,11 +117,7 @@ class Noritake_VFD_GUU100 : public Stream {
 		// protected variables
 		uint32_t _fontData;
 		uint32_t _fontStart;
-		int _next_x;
-		int _next_y;
-		int _cur_x;
-		int _cur_y;
-		int _cur_z;
+		uint32_t _fontSave;
 		uint8_t _displayHeight;
 		uint8_t _displayWidth;
 		uint8_t _displayBright;
@@ -128,11 +128,23 @@ class Noritake_VFD_GUU100 : public Stream {
 		uint8_t _fontHGap;
 		uint8_t _fontVGap;
 		uint8_t _bytesPerChar;
-		uint8_t _negative;
+		uint8_t _inv;
 		uint8_t _charWidth;
 		uint8_t _charHeight;
 		uint8_t _maxChars;
 		uint8_t _maxLines;
+		int _hofs;
+		int _vofs;
+		int _saveHofs;
+		int _saveVofs;
+		int _next_x;
+		int _next_y;
+		int _cur_x;
+		int _cur_y;
+		int _cur_z;
+		int _save_cur_x;
+		int _save_cur_y;
+		int _save_cur_z;
 		// protected functions
 		inline size_t _carriageReturn (void);
 		inline size_t _lineFeed (void);

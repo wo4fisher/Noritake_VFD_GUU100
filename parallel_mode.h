@@ -46,14 +46,11 @@ inline void Noritake_VFD_GUU100::_initPort (void)
 	// setup PARALLEL control pins
 	C_PORT &= ~(RS | RW | EN | CS1 | CS2); // all low
 	C_PORT |= RST; // except reset
-
 	C_DDR |= (RS | RW | EN | CS1 | CS2 | RST); // all outputs
 	D_DDR = 0xFF; // set data port as outputs
-
 	// 100 msec delay after powerup (GU128X64E manual pg. 17)
 	// (doubled to 200 msec for good luck)
 	__builtin_avr_delay_cycles ((F_CPU / 1e3) * 200);
-
 	// assert HW reset for minimum 250 nsec (GU128X64E manual pg. 17)
 	// (doubled to 500 nsec for good luck)
 	C_PORT &= ~RST;
@@ -70,25 +67,7 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 	C_PORT &= ~(((_cur_x < (_displayWidth / 2)) ? CS2 : CS1) | (rs ? 0 : RS) | EN);
 	D_DDR = 0x00; // parallel data port as an input
 	C_PORT |= EN; // assert enable (data available on the rising edge)
-
-	////////////////////////////////////////////////////////////////////////
-	// The setup and hold delay is shorter than the specs require to get
-	// maximum performance. If glitches appear during screen drawing
-	// (especially lines and circles, and if you have long data wires),
-	// then add one "NOP" at a time until it works properly.
-	////////////////////////////////////////////////////////////////////////
-	__asm__ __volatile__ ( // setup & hold delay
-		" nop\n"
-		" nop\n"
-#if ( F_CPU > 8000000UL )
-		" nop\n"
-		" nop\n"
-#endif
-#if ( F_CPU > 16000000UL )
-		" nop\n"
-		" nop\n"
-#endif
-	);
+	__builtin_avr_delay_cycles ((F_CPU / 1e9) * 320); // 320 nsec (GU128X64E manual pg. 10)
 	data = D_PIN; // read a byte from VFD->AVR
 	C_PORT &= ~EN; // de-assert enable
 	// we set the data port back to outputs so that _writePort doesn't have to do it every
@@ -102,20 +81,9 @@ inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 	// set proper cs1/2 and pulse EN (dummy read - GU128X64E manual pg. 16)
 	C_PORT |= (((_cur_x < (_displayWidth / 2)) ? CS1 : CS2) | (rs ? RS : 0));
 	C_PORT &= ~(((_cur_x < (_displayWidth / 2)) ? CS2 : CS1) | (rs ? 0 : RS) | RW);
-	C_PORT |= EN; // assert enable
 	D_PORT = data; // write a byte from AVR->VFD (no need for DDR since read pre-set it)
-	__asm__ __volatile__ (
-		" nop\n" // setup & hold delay
-		" nop\n"
-#if ( F_CPU > 8000000UL )
-		" nop\n"
-		" nop\n"
-#endif
-#if ( F_CPU > 16000000UL )
-		" nop\n"
-		" nop\n"
-#endif
-	);
+	C_PORT |= EN; // assert enable
+	__builtin_avr_delay_cycles ((F_CPU / 1e9) * 200); // 200 nsec (GU128X64E manual pg. 10)
 	C_PORT &= ~EN; // de-assert enable (latch data to vfd on falling edge)
 }
 

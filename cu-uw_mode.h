@@ -108,10 +108,10 @@ inline uint8_t Noritake_VFD_GUU100::_cu_uw_RW (uint8_t data)
 	while (bits--) { // write out bits
 		*SCK_PORT &= ~SCK_BIT; // set sck low
 		*SISO_DDR |= SISO_BIT; // set siso DDR as output
-		(data & _BV (bits)) ? *SISO_PORT |= SISO_BIT : *SISO_PORT &= ~SISO_BIT; // write bit
+		data & _BV (bits) ? *SISO_PORT |= SISO_BIT : *SISO_PORT &= ~SISO_BIT; // write bit
 		*SCK_PORT |= SCK_BIT; // set sck high
 		*SISO_DDR &= ~SISO_BIT; // set siso DDR as input
-		(*SISO_PIN & SISO_BIT) ? data |= _BV (bits) : data &= ~_BV (bits); // read bit
+		*SISO_PIN & SISO_BIT ? data |= _BV (bits) : data &= ~_BV (bits); // read bit
 	}
 
 	return data;

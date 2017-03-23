@@ -37,11 +37,19 @@ void Noritake_VFD_GUU100::init (void)
 	_cur_x = 0; // current X cursor position
 	_cur_y = 0; // current Y cursor position
 	_cur_z = 0; // current scroll offset (lines)
+	_save_cur_x = 0; // saved X cursor position
+	_save_cur_y = 0; // saved Y cursor position
+	_save_cur_z = 0; // saved scroll offset (lines)
 	_next_x = 0; // x size of character cell in pixels
 	_next_y = 0; // y size of character cell in pixels
-	_negative = 0; // display invert yes/no
+	_hofs = 0; // horizontal offset
+	_vofs = 0; // vertical offset
+	_saveHofs = 0; // horizontal offset save
+	_saveVofs = 0; // vertical offset save
+	_inv = 0; // display invert yes/no
 	_fontData = 0; // invalidate font address pointer
 	_fontStart = 0; // invalidate font start pointer
+	_fontSave = 0; // clear out push/pop storage
 	_charWidth =  0; // character width
 	_charHeight = 0; // character height
 	_maxChars = 0; // max chars per line
@@ -123,6 +131,21 @@ void Noritake_VFD_GUU100::getCursor (int &x, int &y)
 	y = _cur_y;
 }
 
+// for user only - do not use inside driver
+void Noritake_VFD_GUU100::pushCursor (void)
+{
+	_save_cur_x = _cur_x;
+	_save_cur_y = _cur_y;
+	_save_cur_z = _cur_z;
+}
+
+// for user only - do not use inside driver
+void Noritake_VFD_GUU100::popCursor (void)
+{
+	_setScroll (_save_cur_z);
+	_setCursor (_save_cur_x, _save_cur_y);
+}
+
 // set dot at X,Y on or off
 void Noritake_VFD_GUU100::setDot (int x, int y, uint8_t on)
 {
@@ -140,7 +163,7 @@ uint8_t Noritake_VFD_GUU100::getDot (int x, int y)
 // this makes drawing normal or inverted (negative)
 void Noritake_VFD_GUU100::setInvert (uint8_t inv)
 {
-	_negative = inv ? 1 : 0;
+	_inv = inv ? 1 : 0;
 }
 
 uint8_t Noritake_VFD_GUU100::clearScreen (void)
@@ -624,6 +647,7 @@ void Noritake_VFD_GUU100::drawArc (int org_x, int org_y, uint8_t x_rad, uint8_t 
 	}
 }
 
+// screen saver draws random polygons
 void Noritake_VFD_GUU100::screenSave (void)
 {
 	int x, y, angle;
@@ -642,6 +666,7 @@ void Noritake_VFD_GUU100::screenSave (void)
 	drawPolygon (x, y, radius, angle, sides, 1);
 }
 
+// screensaver prints text at random locations
 void Noritake_VFD_GUU100::screenSave (const char *str)
 {
 	int s, x, y, x_max, y_max;
@@ -652,18 +677,31 @@ void Noritake_VFD_GUU100::screenSave (const char *str)
 	clearScreen(); // clear screen before message
 
 	s = strlen (str);
-
-//	x_max = (((getMaxChars() - 1) - s) * _next_x);
-//	y_max = ((getMaxLines() - 1) * _next_y);
-
 	x_max = ((_displayWidth - 1) - (s * _next_x));
 	y_max = ((_displayHeight - 1) - _next_y);
-
 	x = (rand() % x_max);
 	y = (rand() % y_max);
 
 	_setCursor (x, y); // set cursor
 	print (str); // print default or user string
+}
+
+// save currently loaded font for use later
+void Noritake_VFD_GUU100::pushFont (void)
+{
+	if (_fontStart) {
+		_fontSave = _fontStart;
+		_saveHofs = _hofs;
+		_saveVofs = _vofs;
+	}
+}
+
+// restore previously saved font
+void Noritake_VFD_GUU100::popFont (void)
+{
+	if (_fontSave) {
+		setFont (_fontSave, _saveHofs, _saveVofs);
+	}
 }
 
 // set the font to use for generating text (16 bit ptr)
@@ -693,6 +731,8 @@ void Noritake_VFD_GUU100::setFont (uint32_t fontPtr, int8_t hofs, int8_t vofs)
 		_charHeight = _fontStart ? _next_y : 0;
 		_maxChars = _fontStart ? (_displayWidth / _next_x) : 0;
 		_maxLines = _fontStart ? (_displayHeight / _next_y) : 0;
+		_hofs = hofs;
+		_vofs = vofs;
 
 	} else {
 		_fontData = _fontStart = 0;
@@ -933,14 +973,14 @@ inline uint8_t Noritake_VFD_GUU100::_bitsBetween (uint8_t x, uint8_t y)
 // write one byte of data to the VFD and update the cursor info
 inline void Noritake_VFD_GUU100::_writeData (uint8_t data)
 {
-	_writePort (_negative ? ~data : data, 1);
+	_writePort (_inv ? ~data : data, 1);
 	_increment();
 }
 
 // read one byte of data from the VFD and update the cursor info
 inline uint8_t Noritake_VFD_GUU100::_readData (void)
 {
-	uint8_t data = (_negative ? ~_readPort (1) : _readPort (1));
+	uint8_t data = (_inv ? ~_readPort (1) : _readPort (1));
 	_increment();
 	return data;
 }
