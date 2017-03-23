@@ -13,7 +13,8 @@
 #include "freedos_16.h"
 #include "glcdfont.h"
 #include "gothic_8x16.h"
-#include "hd44780u.h"
+#include "hd44780u.h" // half space -> 0x7F
+#include "hd44780f.h" // full space -> 0xFF
 #include "ibm_8x14.h"
 #include "ibm_8x16.h"
 #include "ibm_8x8.h"

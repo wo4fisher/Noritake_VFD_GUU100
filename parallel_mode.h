@@ -64,11 +64,10 @@ inline void Noritake_VFD_GUU100::_initPort (void)
 inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 {
 	uint8_t data;
-	uint8_t chip = (_cur_x & _BV (6)); // select left or right side
 	D_DDR = 0x00; // parallel data port as an input
 	// set proper cs1/2 and pulse EN (dummy read - GU128X64E manual pg. 16)
-	C_PORT |= ((chip ? CS2 : CS1) | (rs ? RS : 0) | RW | EN);
-	C_PORT &= ~((chip ? CS1 : CS2) | (rs ? 0 : RS) | EN);
+	C_PORT |= (((_cur_x < (_displayWidth / 2)) ? CS1 : CS2) | (rs ? RS : 0) | RW | EN);
+	C_PORT &= ~(((_cur_x < (_displayWidth / 2)) ? CS2 : CS1) | (rs ? 0 : RS) | EN);
 	D_DDR = 0x00; // parallel data port as an input
 	C_PORT |= EN; // assert enable (data available on the rising edge)
 
@@ -79,14 +78,16 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 	// then add one "NOP" at a time until it works properly.
 	////////////////////////////////////////////////////////////////////////
 	__asm__ __volatile__ ( // setup & hold delay
+		" nop\n"
+		" nop\n"
 #if ( F_CPU > 8000000UL )
+		" nop\n"
 		" nop\n"
 #endif
 #if ( F_CPU > 16000000UL )
 		" nop\n"
-#endif
-		// " nop\n" // <-- add them here
 		" nop\n"
+#endif
 	);
 	data = D_PIN; // read a byte from VFD->AVR
 	C_PORT &= ~EN; // de-assert enable
@@ -98,18 +99,23 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 
 inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 {
-	uint8_t chip = (_cur_x & _BV (6)); // select left or right side
 	// set proper cs1/2 and pulse EN (dummy read - GU128X64E manual pg. 16)
-	C_PORT |= ((chip ? CS2 : CS1) | (rs ? RS : 0));
-	C_PORT &= ~((chip ? CS1 : CS2) | (rs ? 0 : RS) | RW);
+	C_PORT |= (((_cur_x < (_displayWidth / 2)) ? CS1 : CS2) | (rs ? RS : 0));
+	C_PORT &= ~(((_cur_x < (_displayWidth / 2)) ? CS2 : CS1) | (rs ? 0 : RS) | RW);
 	C_PORT |= EN; // assert enable
 	D_PORT = data; // write a byte from AVR->VFD (no need for DDR since read pre-set it)
-#if ( F_CPU > 16000000UL )
 	__asm__ __volatile__ (
 		" nop\n" // setup & hold delay
-		// " nop\n" // <-- add more NOP's here if necessary
-	);
+		" nop\n"
+#if ( F_CPU > 8000000UL )
+		" nop\n"
+		" nop\n"
 #endif
+#if ( F_CPU > 16000000UL )
+		" nop\n"
+		" nop\n"
+#endif
+	);
 	C_PORT &= ~EN; // de-assert enable (latch data to vfd on falling edge)
 }
 

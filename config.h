@@ -28,9 +28,9 @@
 // line below. Realize that this will slow down the VFD performance by about
 // 20 percent (but uses about 1K less flash memory)
 ///////////////////////////////////////////////////////////////////////////////////////
-#if defined(__GNUC__)
-#pragma GCC optimize ("Ofast")
-#endif
+//#if defined(__GNUC__)
+//#pragma GCC optimize ("Ofast")
+//#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // Include the file corresponding to the IO mode you have your GU128X64E-U100

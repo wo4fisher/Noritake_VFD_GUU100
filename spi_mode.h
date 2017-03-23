@@ -59,7 +59,7 @@ inline void Noritake_VFD_GUU100::_initPort (void)
 	// SPI enable, master mode, mode 3
 	SPCR = (_BV (SPE) | _BV (MSTR) | _BV (CPOL) | _BV (CPHA));
 
-	// SPI 2X speed is flakey above 16 mhz... try it if you want.
+	// SPI 2X speed is flakey above 16 mhz on the VFD... try it if you want.
 #if (! ( F_CPU > 16000000UL ))
 	SPSR |= _BV (SPI2X); // double speed SPI
 #endif
@@ -85,8 +85,7 @@ inline uint8_t Noritake_VFD_GUU100::_spiTransfer (uint8_t data)
 inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 {
 	uint8_t data;
-	uint8_t chip = (_cur_x & _BV (6)); // select left or right side
-	C_PORT &= chip ? ~CS2 : ~CS1; // assert active low CS1 or CS2
+	C_PORT &= (_cur_x < (_displayWidth / 2)) ? ~CS1 : ~CS2; // assert active low CS1 or CS2
 	_spiTransfer (SPI_RCMD | (rs << 1)); // send read command w/register select
 	data = _spiTransfer (0); // read data
 	C_PORT |= (CS1 | CS2); // de-assert both CS pins
@@ -95,8 +94,7 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 
 inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 {
-	uint8_t chip = (_cur_x & _BV (6)); // select left or right side
-	C_PORT &= chip ? ~CS2 : ~CS1; // assert active low CS1 or CS2
+	C_PORT &= (_cur_x < (_displayWidth / 2)) ? ~CS1 : ~CS2; // assert active low CS1 or CS2
 	_spiTransfer (SPI_WCMD | (rs << 1)); // send write command w/register select
 	_spiTransfer (data); // send data
 	C_PORT |= (CS1 | CS2); // de-assert both CS pins

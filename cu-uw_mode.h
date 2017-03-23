@@ -81,7 +81,7 @@ inline void Noritake_VFD_GUU100::_writePort (uint8_t data, uint8_t rs)
 {
 	uint8_t cmd;
 	rs ? cmd = 0xE2 : cmd = 0xE0; // select cmd/data w/rw bit clear
-	(_cur_x & _BV (6)) ? cmd |= CS1_BIT : cmd |= CS2_BIT;
+	(_cur_x < (_displayWidth / 2)) ? cmd |= CS2_BIT : cmd |= CS1_BIT;
 	*CS_PORT &= ~CS_BIT; // assert strobe
 	_cu_uw_RW (cmd); // send command via CU-UW mode
 	_cu_uw_RW (data); // send data via CU-UW mode
@@ -93,7 +93,7 @@ inline uint8_t Noritake_VFD_GUU100::_readPort (uint8_t rs)
 	uint8_t cmd;
 	uint8_t data;
 	rs ? cmd = 0xE6 : cmd = 0xE4; // select cmd/data w/rw bit set
-	(_cur_x & _BV (6)) ? cmd |= CS1_BIT : cmd |= CS2_BIT;
+	(_cur_x < (_displayWidth / 2)) ? cmd |= CS2_BIT : cmd |= CS1_BIT;
 	*CS_PORT &= ~CS_BIT; // assert strobe
 	_cu_uw_RW (cmd); // send command via CU-UW mode
 	data = _cu_uw_RW (0); // read data via CU-UW mode

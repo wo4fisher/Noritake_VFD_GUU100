@@ -37,23 +37,29 @@ void Noritake_VFD_GUU100::init (void)
 	_cur_x = 0; // current X cursor position
 	_cur_y = 0; // current Y cursor position
 	_cur_z = 0; // current scroll offset (lines)
-	_save_x = 0; // saved X position (pushCursor & popCursor)
-	_save_y = 0; // saved Y position (pushCursor & popCursor)
-	_save_z = 0; // saved Z position (pushCursor & popCursor)
 	_next_x = 0; // x size of character cell in pixels
 	_next_y = 0; // y size of character cell in pixels
 	_negative = 0; // display invert yes/no
 	_fontData = 0; // invalidate font address pointer
 	_fontStart = 0; // invalidate font start pointer
+	_charWidth =  0; // character width
+	_charHeight = 0; // character height
+	_maxChars = 0; // max chars per line
+	_maxLines = 0; // max lines
 	setDisplay (1); // turn display on
 	setBrightness (100); // default brightness and cathode on
 	clearScreen(); // clear screen
+	_setCursor (0, 0); // zero cursor
+	_setScroll (0); // zero scroll
 }
 
 // turn display on or off (filament stays on)
 void Noritake_VFD_GUU100::setDisplay (uint8_t on)
 {
-	_writeDisplay (SETDISP | (on ? 0x01 : 0x00));
+	_cur_x = 64; // turn on right side
+	_writeCmd (SETDISP | (on ? 0x01 : 0x00));
+	_cur_x = 0; // turn on left side
+	_writeCmd (SETDISP | (on ? 0x01 : 0x00));
 }
 
 // set the display brightness to one of 8 levels:
@@ -74,8 +80,8 @@ uint8_t Noritake_VFD_GUU100::setBrightness (uint8_t percent)
 	}
 
 	// brightness 0 turns off the filament
-	_writePort (FUNC_SET, 0); // function set
-	_writePort (percent ? (_displayBright | SETBRITE | CATHODE) : ((_displayBright | SETBRITE) & ~CATHODE), 0);
+	_writeCmd (FUNC_SET); // function set
+	_writeCmd (percent ? (_displayBright | SETBRITE | CATHODE) : ((_displayBright | SETBRITE) & ~CATHODE));
 	return _displayBright;
 }
 
@@ -100,8 +106,8 @@ void Noritake_VFD_GUU100::setLine (double x, double y)
 // get cursor position as a (possibly fractional) column and line
 void Noritake_VFD_GUU100::getLine (double &x, double &y)
 {
-	x = (double) (_cur_x / _next_x);
-	y = (double) (_cur_y / _next_y);
+	x = (double)(_cur_x / _next_x);
+	y = (double)(_cur_y / _next_y);
 }
 
 // set cursor coordinates to X,Y
@@ -117,37 +123,6 @@ void Noritake_VFD_GUU100::getCursor (int &x, int &y)
 	y = _cur_y;
 }
 
-// this is for the user only - not used by this library
-void Noritake_VFD_GUU100::pushCursor (void)
-{
-	_save_x = _cur_x;
-	_save_y = _cur_y;
-	_save_z = _cur_z;
-}
-
-// this is for the user only - not used by this library
-void Noritake_VFD_GUU100::popCursor (void)
-{
-	_setCursor (_save_x, _save_y);
-	_setScroll (_save_z);
-}
-
-// set dot at absolute address 0...8191
-void Noritake_VFD_GUU100::setPixel (uint16_t addr, uint8_t on)
-{
-	int y = (addr / _displayWidth);
-	int x = (addr - (y * _displayWidth));
-	_setDot (x, y, on ? 1 : 0);
-}
-
-// get state of dot at absolute address 0...8191
-uint8_t Noritake_VFD_GUU100::getPixel (uint16_t addr)
-{
-	int y = (addr / _displayWidth);
-	int x = (addr - (y * _displayWidth));
-	return getDot (x, y) ? 1 : 0;
-}
-
 // set dot at X,Y on or off
 void Noritake_VFD_GUU100::setDot (int x, int y, uint8_t on)
 {
@@ -157,49 +132,15 @@ void Noritake_VFD_GUU100::setDot (int x, int y, uint8_t on)
 // get state of dot at X,Y
 uint8_t Noritake_VFD_GUU100::getDot (int x, int y)
 {
-	return (_getBits (x, y) & _BV (y % 8)) ? 1 : 0;
-}
-
-// get byte at X,Y
-uint8_t Noritake_VFD_GUU100::getByte (int x, int y)
-{
-	_setCursor (x, y);
-	return _readData();
-}
-
-// set byte at X,Y
-void Noritake_VFD_GUU100::setByte (int x, int y, uint8_t c)
-{
-	_setCursor (x, y);
-	_writeData (c);
+	uint8_t z;
+	z = (_getBits (x, y) & (1 << y % 8)) ? 1 : 0;
+	return z;
 }
 
 // this makes drawing normal or inverted (negative)
 void Noritake_VFD_GUU100::setInvert (uint8_t inv)
 {
 	_negative = inv ? 1 : 0;
-}
-
-// this inverts (negative) the entire screen
-// kinda corny, but someone may need it.
-void Noritake_VFD_GUU100::invertScreen (void)
-{
-	int x, y;
-	uint8_t c;
-	uint16_t n = (_displayWidth * (_displayHeight / 8));
-
-	while (n--) {
-		x = _cur_x;
-		y = _cur_y;
-		c = ~_readData(); // read a byte and flip it
-		_setCursor (x, y); // set cursor
-		_writeData (c); // write it back flipped
-	}
-}
-
-uint8_t Noritake_VFD_GUU100::clear (void)
-{
-	return clearScreen (0);
 }
 
 uint8_t Noritake_VFD_GUU100::clearScreen (void)
@@ -209,7 +150,7 @@ uint8_t Noritake_VFD_GUU100::clearScreen (void)
 
 // clear the screen by filling it with 0x00.
 // note the fill char can be optionally specified in
-// order to create special(?) effects.
+// order to create special (?) effects.
 uint8_t Noritake_VFD_GUU100::clearScreen (uint8_t pattern)
 {
 	uint16_t n = (_displayWidth * (_displayHeight / 8));
@@ -223,30 +164,18 @@ uint8_t Noritake_VFD_GUU100::clearScreen (uint8_t pattern)
 	return pattern;
 }
 
-// get screen block at X,Y starting at (X, Y)
-uint16_t Noritake_VFD_GUU100::getBlock (uint8_t *data, int x, int y, uint8_t width, uint8_t height)
+// draw an image pointed to by a 16 bit POINTER to data in PROGMEM
+void Noritake_VFD_GUU100::drawImage (const uint8_t *data, int x, int y, uint8_t width, uint8_t height)
 {
-	uint8_t *ptr;
-	int x1, y1;
-	// mask bottom 3 bits (insures a byte boundary)
-	y &= ~0b00000111;
-	ptr = data; // pointer to user's data block
-
-	for (y1 = y; y1 < (height + y); y1 += 8) {
-		for (x1 = x; x1 < (width + x); x1++) {
-			*ptr++ = getByte (x1, y1); // get data
-		}
-	}
-
-	return (uint16_t) (ptr - data);
+	drawImage (((uint32_t) data), x, y, width, height);
 }
 
-void Noritake_VFD_GUU100::setBlock (uint8_t *data, int x, int y, uint8_t width, uint8_t height)
+void Noritake_VFD_GUU100::drawImage (uint8_t *data, int x, int y, uint8_t width, uint8_t height)
 {
 	uint8_t mask, mix;
-	int ix, iy, y2;
 	uint16_t src; // must be 16 bit because of "<< 8" operations
-	uint32_t end;
+	int16_t ix, iy, y2, end;
+
 	y2 = (y + height);
 
 	if (_clip (y) == _clip (y2)) {
@@ -325,23 +254,17 @@ void Noritake_VFD_GUU100::setBlock (uint8_t *data, int x, int y, uint8_t width, 
 	}
 }
 
-// draw an image pointed to by a 16 bit POINTER to data in PROGMEM
-void Noritake_VFD_GUU100::drawImage (const uint8_t *data, int x, int y, uint8_t width, uint8_t height)
-{
-	drawImage (((uint32_t) data), x, y, width, height);
-}
-
 // draw an image pointed to by an absolute 32 bit address of data in PROGMEM
-// (this address is obtained by using "pgm_get_far_address()" of the data in
+// (this address is obtained by using "pgm_get_far_address ()" of the data in
 // PROGMEM at compile time (i.e. static)). See the font files for examples on
-// how "pgm_get_far_address()" is used. (You CANNOT pass it a runtime pointer,
+// how "pgm_get_far_address ()" is used. (You CANNOT pass it a runtime pointer,
 // it only works with static compile-time objects - which sucks).
 void Noritake_VFD_GUU100::drawImage (uint32_t data, int x, int y, uint8_t width, uint8_t height)
 {
 	uint8_t mask, mix;
-	int ix, iy, y2;
 	uint16_t src; // must be 16 bit because of "<< 8" operations
-	uint32_t end;
+	int16_t ix, iy, y2, end;
+
 	y2 = (y + height);
 
 	if (_clip (y) == _clip (y2)) {
@@ -396,7 +319,8 @@ void Noritake_VFD_GUU100::drawImage (uint32_t data, int x, int y, uint8_t width,
 					setCursor (x, iy);
 
 					for (ix = 0; ix < width; ix++) {
-						src = PGM_READ_BYTE (data + ix) + ((data + ix < end) ? (PGM_READ_BYTE (data + ix + width) << 8) : 0);
+						src = PGM_READ_BYTE (data + ix) + ((data + ix < end) ?
+							(PGM_READ_BYTE (data + ix + width) << 8) : 0);
 						src >>= (_align (y) - y);
 						_writeData (src);
 					}
@@ -410,7 +334,8 @@ void Noritake_VFD_GUU100::drawImage (uint32_t data, int x, int y, uint8_t width,
 
 				for (ix = 0; ix < width; ix++) {
 					mix = _getBits (x + ix, _clip (y2));
-					src = PGM_READ_BYTE (data + ix) + ((data + ix < end) ? (PGM_READ_BYTE (data + ix + width) << 8) : 0);
+					src = PGM_READ_BYTE (data + ix) + ((data + ix < end) ?
+						(PGM_READ_BYTE (data + ix + width) << 8) : 0);
 					src >>= (_align (y) - y);
 					src = (mix & ~mask) | (src & mask);
 					_writeData (src);
@@ -420,11 +345,12 @@ void Noritake_VFD_GUU100::drawImage (uint32_t data, int x, int y, uint8_t width,
 	}
 }
 
+/*** stops the "multi-line comment" compiler warning.
 ////////////////////////////////////////////////////////////////////////
 // draw a polygon of any number of sides, rotated by any "angle"
 // note angle "0" degrees is straight up (i.e. a triangle is
 // drawn like this: /\
-// /__\
+//                 /__\
 // and the angle goes clockwise so that an angle of 90 degrees
 // points the apex to the 3:00 o'clock position.
 //
@@ -432,6 +358,7 @@ void Noritake_VFD_GUU100::drawImage (uint32_t data, int x, int y, uint8_t width,
 // me figure out a subtle problem and speeding up the code too!
 // Reference: http://forum.arduino.cc/index.php?topic=343198
 ////////////////////////////////////////////////////////////////////////
+***/
 void Noritake_VFD_GUU100::drawPolygon (int x, int y, uint8_t radius, int angle, uint8_t sides, uint8_t on)
 {
 	int x1, y1, x2, y2;
@@ -473,60 +400,28 @@ void Noritake_VFD_GUU100::drawVector (int x, int y, int sr, int er, int angle, u
 	double s = sin (th);
 	double c = cos (th);
 	drawLine (
-		round (c * sr + x),
-		round (s * sr + y),
-		round (c * er + x),
-		round (s * er + y),
+		round ((c * sr) + x),
+		round ((s * sr) + y),
+		round ((c * er) + x),
+		round ((s * er) + y),
 		on
 	);
 }
 
-// draw a line from X1,Y1 to X2,Y2
-// http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm
-void Noritake_VFD_GUU100::drawLine (int x1, int y1, int x2, int y2, uint8_t on)
+void Noritake_VFD_GUU100::drawLine (int x0, int y0, int x1, int y1, uint8_t on)
 {
-	int delta_x, delta_y, ix, iy, error;
-	delta_x = (x2 - x1);
-	// if x1 == x2, then it does not matter what we set here
-	ix = ((delta_x > 0) - (delta_x < 0));
-	delta_x = (abs (delta_x) << 1);
-	delta_y = (y2 - y1);
-	// if y1 == y2, then it does not matter what we set here
-	iy = ((delta_y > 0) - (delta_y < 0));
-	delta_y = (abs (delta_y) << 1);
-	_setDot (x1, y1, on);
+	int dx = abs (x1 - x0), sx = x0 < x1 ? 1 : -1;
+	int dy = abs (y1 - y0), sy = y0 < y1 ? 1 : -1;
+	int err = (dx > dy ? dx : -dy) / 2, e2;
 
-	if (delta_x >= delta_y) {
-		// error may go below zero
-		error = (delta_y - (delta_x >> 1));
-
-		while (x1 != x2) {
-			if ((error >= 0) && (error || (ix > 0))) {
-				error -= delta_x;
-				y1 += iy;
-			}
-
-			// else do nothing
-			error += delta_y;
-			x1 += ix;
-			_setDot (x1, y1, on);
+	while (1) {
+		_setDot (x0, y0, on);
+		if (x0 == x1 && y0 == y1) {
+			break;
 		}
-
-	} else {
-		// error may go below zero
-		error = (delta_x - (delta_y >> 1));
-
-		while (y1 != y2) {
-			if ((error >= 0) && (error || (iy > 0))) {
-				error -= delta_y;
-				x1 += ix;
-			}
-
-			// else do nothing
-			error += delta_x;
-			y1 += iy;
-			_setDot (x1, y1, on);
-		}
+		e2 = err;
+		if (e2 > -dx) { err -= dy; x0 += sx; }
+		if (e2 < dy) { err += dx; y0 += sy; }
 	}
 }
 
@@ -543,7 +438,7 @@ void Noritake_VFD_GUU100::drawRect (int x1, int y1, int x2, int y2, uint8_t on)
 // draw a rectangle, then fill it
 void Noritake_VFD_GUU100::fillRect (int x1, int y1, int x2, int y2, uint8_t on)
 {
-	// swap() is defined in "Noritake_VFD_GUU100.h"
+	// swap () is defined in "Noritake_VFD_GUU100.h"
 	if (x1 > x2) {
 		swap (x1, x2);
 	}
@@ -562,7 +457,7 @@ void Noritake_VFD_GUU100::drawRoundRect (int x1, int y1, int x2, int y2, uint8_t
 {
 	int x, y, tSwitch;
 
-	// swap() is defined in "Noritake_VFD_GUU100.h"
+	// swap () is defined in "Noritake_VFD_GUU100.h"
 	if (x1 > x2) {
 		swap (x1, x2);
 	}
@@ -690,7 +585,6 @@ void Noritake_VFD_GUU100::fillCircle (int x, int y, uint8_t radius, uint8_t on)
 			ddF_y += 2;
 			f += ddF_y;
 		}
-
 		x1++;
 		ddF_x += 2;
 		f += ddF_x;
@@ -710,12 +604,19 @@ void Noritake_VFD_GUU100::drawArc (int org_x, int org_y, uint8_t radius, int sta
 
 void Noritake_VFD_GUU100::drawArc (int org_x, int org_y, uint8_t x_rad, uint8_t y_rad, int start_angle, int end_angle, uint8_t on)
 {
-	int angle, z;
-	int x, y;
+	int angle, x, y, sa, ea;
 	double th;
-	z = ((start_angle %= 360) < (end_angle %= 360)) ? 1 : -1;
 
-	for (angle = start_angle; angle != end_angle; angle += z) {
+	if (start_angle < end_angle) {
+		sa = start_angle;
+		ea = end_angle;
+
+	} else {
+		sa = end_angle;
+		ea = start_angle;
+	}
+
+	for (angle = sa; angle < ea; angle++) {
 		th = rad (angle - 90);
 		x = round ((cos (th) * x_rad) + org_x);
 		y = round ((sin (th) * y_rad) + org_y);
@@ -727,11 +628,12 @@ void Noritake_VFD_GUU100::screenSave (void)
 {
 	int x, y, angle;
 	uint8_t radius, tworad, sides;
-	radius = (MIN_RADIUS + (rand() % ((MAX_RADIUS - MIN_RADIUS) + 1)));
+
+	radius = (MIN_RADIUS + (rand() % (MAX_RADIUS - MIN_RADIUS)));
 	tworad = (radius * 2);
-	x = (radius + (rand() % (_displayWidth - tworad)));
-	y = (radius + (rand() % (_displayHeight - tworad)));
-	sides = (MIN_SIDES + (rand() % ((MAX_SIDES - MIN_SIDES) + 1)));
+	x = (radius + (rand() % ((_displayWidth - 1) - tworad)));
+	y = (radius + (rand() % ((_displayHeight - 1) - tworad)));
+	sides = (MIN_SIDES + (rand() % (1 + (MAX_SIDES - MIN_SIDES))));
 	angle = (rand() % 360);
 	setInvert (0); // insure normal pixel polarity
 	setBrightness (100); // max brightness
@@ -742,62 +644,37 @@ void Noritake_VFD_GUU100::screenSave (void)
 
 void Noritake_VFD_GUU100::screenSave (const char *str)
 {
-	int x, y, z, x_max, y_max;
-	static const uint8_t toolong[] PROGMEM = {
-		0x01, 0x01, 0x7f, 0x01, 0x01, 0x00, // T
-		0x3e, 0x41, 0x41, 0x41, 0x3e, 0x00, // O
-		0x3e, 0x41, 0x41, 0x41, 0x3e, 0x00, // O
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // SPACE
-		0x7f, 0x40, 0x40, 0x40, 0x40, 0x00, // L
-		0x3e, 0x41, 0x41, 0x41, 0x3e, 0x00, // O
-		0x7f, 0x04, 0x08, 0x10, 0x7f, 0x00, // N
-		0x3e, 0x41, 0x41, 0x51, 0x32, 0x00, // G
-	};
+	int s, x, y, x_max, y_max;
 
 	setInvert (0); // insure normal pixel polarity
 	setBrightness (100); // max brightness
 	setDisplay (1); // display on
 	clearScreen(); // clear screen before message
 
-	// print "TOO LONG" if custom string won't fit on one line
-	if ((strlen (str) * _next_x) > _displayWidth) {
-		x = ((_displayWidth - sizeof (toolong)) / 2); // center message left/right
-		y = ((_displayHeight - 8) / 2); // center message top/bot
-		z = (sizeof (toolong) / sizeof (*toolong)); // how many chars in message
-		drawImage (toolong, x, y, z, 8); // draw entire message as one graphic block
+	s = strlen (str);
 
-	} else {
-		x_max = ((_displayWidth - 1) - (strlen (str) * _next_x)); // get max x size
-		y_max = ((_displayHeight - 1) - _next_y); // get max y size
+//	x_max = (((getMaxChars() - 1) - s) * _next_x);
+//	y_max = ((getMaxLines() - 1) * _next_y);
 
-		while ((x = (rand() % (_displayWidth - 1))) > x_max); // get random x within bounds
+	x_max = ((_displayWidth - 1) - (s * _next_x));
+	y_max = ((_displayHeight - 1) - _next_y);
 
-		while ((y = (rand() % (_displayHeight - 1))) > y_max); // get random y within bounds
+	x = (rand() % x_max);
+	y = (rand() % y_max);
 
-		_setCursor (x, y); // set cursor
-		print (str); // print default or user string
-	}
-}
-
-void Noritake_VFD_GUU100::setFont (const uint8_t *fontPtr)
-{
-	setFont ((uint32_t) fontPtr, 0, 0);
-}
-
-void Noritake_VFD_GUU100::setFont (uint32_t fontPtr)
-{
-	setFont (fontPtr, 0, 0);
+	_setCursor (x, y); // set cursor
+	print (str); // print default or user string
 }
 
 // set the font to use for generating text (16 bit ptr)
-void Noritake_VFD_GUU100::setFont (const uint8_t *fontPtr, int h_gap, int v_gap)
+void Noritake_VFD_GUU100::setFont (const uint8_t *fontPtr, int8_t hofs, int8_t vofs)
 {
 	// accept a 16 bit PROGMEM pointer
-	setFont ((uint32_t) fontPtr, h_gap, v_gap);
+	setFont ((uint32_t) fontPtr, hofs, vofs);
 }
 
 // set the font to use for generating text (32 bit uint)
-void Noritake_VFD_GUU100::setFont (uint32_t fontPtr, int h_gap, int v_gap)
+void Noritake_VFD_GUU100::setFont (uint32_t fontPtr, int8_t hofs, int8_t vofs)
 {
 	// accept a flat 32 bit pointer address
 	_fontData = _fontStart = fontPtr;
@@ -810,16 +687,16 @@ void Noritake_VFD_GUU100::setFont (uint32_t fontPtr, int h_gap, int v_gap)
 		_firstChar = PGM_READ_BYTE (_fontData++);
 		_lastChar = PGM_READ_BYTE (_fontData++);
 		_bytesPerChar = PGM_READ_BYTE (_fontData++);
-		_next_x = _fontWidth + _fontHGap + h_gap;
-		_next_y = _fontHeight + _fontVGap + v_gap;
+		_next_x = _fontWidth + _fontHGap + hofs;
+		_next_y = _fontHeight + _fontVGap + vofs;
+		_charWidth = _fontStart ? _next_x : 0;
+		_charHeight = _fontStart ? _next_y : 0;
+		_maxChars = _fontStart ? (_displayWidth / _next_x) : 0;
+		_maxLines = _fontStart ? (_displayHeight / _next_y) : 0;
 
 	} else {
 		_fontData = _fontStart = 0;
 	}
-
-	// now global "_fontData" points to the first byte of font DATA
-	// and "_fontStart" points to the first byte of font itself
-	// (used to save and reload a font)
 }
 
 // get address of loaded font (useful for saving what was previously
@@ -831,22 +708,22 @@ uint32_t Noritake_VFD_GUU100::getFont (void)
 
 uint8_t Noritake_VFD_GUU100::getCharWidth (void)
 {
-	return _fontStart ? _next_x : 0; // character width
+	return _charWidth;
 }
 
 uint8_t Noritake_VFD_GUU100::getCharHeight (void)
 {
-	return _fontStart ? _next_y : 0; // character height
+	return _charHeight;
 }
 
 uint8_t Noritake_VFD_GUU100::getMaxChars (void)
 {
-	return _fontStart ? (_displayWidth / _next_x) : 0; // max chars per line
+	return _maxChars;
 }
 
 uint8_t Noritake_VFD_GUU100::getMaxLines (void)
 {
-	return _fontStart ? (_displayHeight / _next_y) : 0; // max lines
+	return _maxLines;
 }
 
 void Noritake_VFD_GUU100::home (void)
@@ -854,12 +731,12 @@ void Noritake_VFD_GUU100::home (void)
 	home (0);
 }
 
-// set cursor home. optionally zero the Z scroll also (if "s" is non-zero)
+// set cursor home. optionally zero the Z scroll also (if "z" is non-zero)
 void Noritake_VFD_GUU100::home (uint8_t z)
 {
 	// optional reset scroll (default=no)
 	if (z) {
-		_setScroll (z);
+		_setScroll (z % _displayHeight);
 	}
 
 	_setCursor (0, 0);
@@ -868,7 +745,7 @@ void Noritake_VFD_GUU100::home (uint8_t z)
 // dummies for stream compatability
 int Noritake_VFD_GUU100::available (void)
 {
-	return 1;
+	return 0;
 }
 
 // dummy for stream compatability
@@ -899,10 +776,8 @@ inline size_t Noritake_VFD_GUU100::write (uint8_t c)
 {
 	int _tmp_x, _tmp_y;
 
-	// if no font is loaded and you try to print
-	// the display will say "NO FONT LOADED"
 	if (! _fontData) {
-		return _noFont();
+		return 0;
 	}
 
 	_tmp_x = _cur_x; // get a working copy of cursor pos.
@@ -944,7 +819,7 @@ inline size_t Noritake_VFD_GUU100::write (uint8_t c)
 
 	// check this AFTER so that control codes always
 	// work, even if they are not in the font file.
-	if ((c == 0) || (c < _firstChar) || (c > _lastChar)) {
+	if ((c < _firstChar) || (c > _lastChar)) {
 		return 0;
 	}
 
@@ -960,11 +835,11 @@ inline size_t Noritake_VFD_GUU100::write (uint8_t c)
 
 	drawImage (_fontData + (c * _bytesPerChar), _tmp_x, _tmp_y, _fontWidth, _fontHeight); // draw new char
 
-	if ((_cur_x + _next_x) <= _displayWidth) {
+	if ((_cur_x + _next_x) < _displayWidth) {
 		_tmp_x += _next_x; // if room, move to next char space
 
 	} else {
-		if ((_cur_y + _next_y) <= _displayHeight) {
+		if ((_cur_y + _next_y) < _displayHeight) {
 			_tmp_x = 0; // no room for next char, if next line...
 			_tmp_y += _next_y; // ...is available, then go to it
 
@@ -975,6 +850,7 @@ inline size_t Noritake_VFD_GUU100::write (uint8_t c)
 	}
 
 	_setCursor (_tmp_x, _tmp_y);
+
 	return 1;
 }
 
@@ -988,7 +864,7 @@ inline size_t Noritake_VFD_GUU100::_carriageReturn (void)
 // set cursor to next line (column not changed)
 inline size_t Noritake_VFD_GUU100::_lineFeed (void)
 {
-	if ((_cur_y + _next_y) < _displayHeight) {
+	if ((_cur_y + _next_y) < (getMaxLines() * _next_y)) {
 		_cur_y += _next_y;
 
 	} else {
@@ -1006,18 +882,18 @@ inline size_t Noritake_VFD_GUU100::_backSpace (void)
 	_tmp_x = _cur_x;
 	_tmp_y = _cur_y;
 
-	if ((_tmp_x + _next_x) > _next_x) {
-		// backup 1 char
+	if ((_tmp_x - _next_x) >= 0) {
+		// backup 1 char if we can
 		_tmp_x -= _next_x;
 
 	} else {
-		if ((_tmp_y + _next_y) > _next_y) {
-			_tmp_x = ((_displayWidth - _next_x) - (_displayWidth % _next_x));
+		if ((_tmp_y - _next_y) >= 0) {
+			_tmp_x = ((getMaxChars() - 1) * _next_x);
 			_tmp_y -= _next_y;
 
 		} else {
-			_tmp_x = ((_displayWidth - _next_x) - (_displayWidth % _next_x));
-			_tmp_y = ((_displayHeight - _next_y) - (_displayHeight % _next_y));
+			_tmp_x = ((getMaxChars() - 1) * _next_x);
+			_tmp_y = ((getMaxLines() - 1) * _next_y);
 		}
 	}
 
@@ -1043,60 +919,15 @@ inline size_t Noritake_VFD_GUU100::_doTabs (uint8_t _tab_size)
 	return n;
 }
 
-// when called this prints "NO FONT" on the VFD
-// screen, centered left-right and top-bottom.
-inline size_t Noritake_VFD_GUU100::_noFont (void)
-{
-	int _tmp_x, _tmp_y, _tmp_z;
-	static const uint8_t msg[] PROGMEM = {
-		0x7F, 0x04, 0x08, 0x10, 0x7F, 0x00, // "N"
-		0x3E, 0x41, 0x41, 0x41, 0x3E, 0x00, // "O"
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // SPACE
-		0x7F, 0x09, 0x09, 0x09, 0x01, 0x00, // "F"
-		0x3E, 0x41, 0x41, 0x41, 0x3E, 0x00, // "O"
-		0x7F, 0x04, 0x08, 0x10, 0x7F, 0x00, // "N"
-		0x01, 0x01, 0x7F, 0x01, 0x01, 0x00, // "T"
-	};
-
-	_tmp_x = ((_displayWidth - sizeof (msg)) / 2); // center left/right
-	_tmp_y = ((_displayHeight - 8) / 2); // center top/bot
-	_tmp_z = (sizeof (msg) / sizeof (*msg)); // how many chars
-	setInvert (0); // insure normal pixel polarity
-	setBrightness (100); // be sure cathode is on and display is bright
-	clearScreen(); // clear any graphics off screen before message
-	drawImage (msg, _tmp_x, _tmp_y, _tmp_z, 8); // draw entire message as one graphic block
-	// wait 1 second for it to show in case of fast printing
-	__builtin_avr_delay_cycles ((F_CPU / 1e3) * 1000);
-	return 0;
-}
-
-// send a command to both "chips" with one call
-inline void Noritake_VFD_GUU100::_writeDisplay (uint8_t cmd)
-{
-	int _tmp_x, _tmp_y;
-	_tmp_x = _cur_x;
-	_tmp_y = _cur_y;
-	_cur_x = 0;
-	_cur_y = 0;
-	_writePort (cmd, 0);
-	_cur_x = 64;
-	_cur_y = 0;
-	_writePort (cmd, 0);
-	_setCursor (_tmp_x, _tmp_y);
-}
-
 // align data (usually text) that crosses chip boundaries
 inline uint8_t Noritake_VFD_GUU100::_bitsBetween (uint8_t x, uint8_t y)
 {
 	if ((x / 8) != (y / 8)) {
-		return ~ (_BV ((x % 8)) - 1);
+		return ~((1 << ((x % 8))) - 1);
 
 	} else {
-		x = (x % 8);
-		y = (y % 8);
+		return ~(((1 << (x % 8))) - 1) & (((1 << (y % 8))) - 1);
 	}
-
-	return ~ ((_BV (x)) - 1) & ((_BV (y)) - 1);
 }
 
 // write one byte of data to the VFD and update the cursor info
@@ -1123,16 +954,19 @@ inline void Noritake_VFD_GUU100::_writeCmd (uint8_t cmd)
 // update cursor position info
 inline void Noritake_VFD_GUU100::_increment (void)
 {
-	_cur_x++;
+	_cur_x += 1;
 
 	if (_cur_x < _displayWidth) { // if next col position doesn't hit the end...
 		// nothing
+
 	} else {
+
 		_cur_x = 0;
 		_cur_y += 8;
 
 		if (_cur_y < _displayHeight) { // if can set next line...
 			// nothing
+
 		} else {
 			_cur_x = 0;
 			_cur_y = 0;
@@ -1145,15 +979,15 @@ inline void Noritake_VFD_GUU100::_increment (void)
 // set dot at X,Y on or off (fast inline mode)
 inline void Noritake_VFD_GUU100::_setDot (int x, int y, uint8_t on)
 {
-	if ((x < _displayWidth) && (y < _displayHeight)) {
-		_writeData (on ? (_getBits (x, y) | _BV (y % 8)) : (_getBits (x, y) & ~_BV (y % 8)));
+	if (_checkXY (x, y)) {
+		on ? _writeData (_getBits (x, y) | (1 << (y % 8))) : _writeData (_getBits (x, y) & ~(1 << (y % 8)));
 	}
 }
 
 // set cursor position (both soft info and hardware registers)
 inline void Noritake_VFD_GUU100::_setCursor (int x, int y)
 {
-	if ((x < _displayWidth) && (y < _displayHeight)) {
+	if (_checkXY (x, y)) {
 		_cur_x = x; // update x and y...
 		_cur_y = y; // ...cursor position
 		_writeCmd (SETADDR | _cur_x); // set...
@@ -1162,12 +996,13 @@ inline void Noritake_VFD_GUU100::_setCursor (int x, int y)
 }
 
 // set vertical offset position (both soft info and hardware registers)
-inline void Noritake_VFD_GUU100::_setScroll (int z)
+inline void Noritake_VFD_GUU100::_setScroll (uint8_t z)
 {
-	if (z < _displayHeight) {
-		_cur_z = z;
-		_writeDisplay (SETLINE | _cur_z); // set it
-	}
+	_cur_z = (z % _displayHeight);
+	_cur_x = 64; // set right side
+	_writeCmd (SETLINE | _cur_z);
+	_cur_x = 0; // set left side
+	_writeCmd (SETLINE | _cur_z);
 }
 
 // read a byte at X,Y (preserve cursor location)
@@ -1175,13 +1010,19 @@ inline uint8_t Noritake_VFD_GUU100::_getBits (int x, int y)
 {
 	uint8_t data = 0;
 
-	if ((x < _displayWidth) && (y < _displayHeight)) {
+	if (_checkXY (x, y)) {
 		_setCursor (x, y);
 		data = _readData();
 		_setCursor (x, y);
 	}
 
 	return data;
+}
+
+// check that x and y are legal
+inline uint8_t Noritake_VFD_GUU100::_checkXY (int x, int y)
+{
+	return ((x < (_displayWidth - 1)) && (y < (_displayHeight - 1)) && (x > -1) && (y > -1));
 }
 
 // align text at "chip" boundaries

@@ -64,22 +64,13 @@ class Noritake_VFD_GUU100 : public Stream {
 		void getLine (double &x, double &y);
 		void setCursor (int, int);
 		void getCursor (int &x, int &y);
-		void pushCursor (void);
-		void popCursor (void);
-		void setPixel (uint16_t, uint8_t);
-		uint8_t getPixel (uint16_t);
 		void setDot (int, int, uint8_t);
 		uint8_t getDot (int, int);
-		uint8_t getByte (int, int);
-		void setByte (int, int, uint8_t);
 		void setInvert (uint8_t);
-		void invertScreen (void);
-		uint8_t clear (void);
 		uint8_t clearScreen (void);
 		uint8_t clearScreen (uint8_t);
-		uint16_t getBlock (uint8_t *, int, int, uint8_t, uint8_t);
-		void setBlock (uint8_t *, int, int, uint8_t, uint8_t);
 		void drawImage (const uint8_t *, int, int, uint8_t, uint8_t);
+		void drawImage (uint8_t *, int, int, uint8_t, uint8_t);
 		void drawImage (uint32_t , int, int, uint8_t, uint8_t);
 		void drawPolygon (int, int, uint8_t, int, uint8_t, uint8_t);
 		void drawVector (int, int, int, int, int, uint8_t);
@@ -94,10 +85,8 @@ class Noritake_VFD_GUU100 : public Stream {
 		void drawArc (int, int, uint8_t, uint8_t, int, int, uint8_t);
 		void screenSave (void);
 		void screenSave (const char *);
-		void setFont (const uint8_t *);
-		void setFont (uint32_t);
-		void setFont (const uint8_t *, int, int);
-		void setFont (uint32_t, int, int);
+		void setFont (const uint8_t *, int8_t=0, int8_t=0);
+		void setFont (uint32_t, int8_t=0, int8_t=0);
 		uint32_t getFont (void);
 		uint8_t getCharWidth (void);
 		uint8_t getCharHeight (void);
@@ -120,15 +109,12 @@ class Noritake_VFD_GUU100 : public Stream {
 #define PGM_READ_BYTE pgm_read_byte_near
 #endif
 
-	protected:
+	private:
 		// protected variables
 		uint32_t _fontData;
 		uint32_t _fontStart;
-		uint8_t _next_x;
-		uint8_t _next_y;
-		int _save_x;
-		int _save_y;
-		int _save_z;
+		int _next_x;
+		int _next_y;
 		int _cur_x;
 		int _cur_y;
 		int _cur_z;
@@ -143,13 +129,15 @@ class Noritake_VFD_GUU100 : public Stream {
 		uint8_t _fontVGap;
 		uint8_t _bytesPerChar;
 		uint8_t _negative;
+		uint8_t _charWidth;
+		uint8_t _charHeight;
+		uint8_t _maxChars;
+		uint8_t _maxLines;
 		// protected functions
 		inline size_t _carriageReturn (void);
 		inline size_t _lineFeed (void);
 		inline size_t _backSpace (void);
 		inline size_t _doTabs (uint8_t);
-		inline size_t _noFont (void);
-		inline void _writeDisplay (uint8_t);
 		inline uint8_t _bitsBetween (uint8_t, uint8_t);
 		inline void _writeData (uint8_t);
 		inline uint8_t _readData (void);
@@ -157,8 +145,9 @@ class Noritake_VFD_GUU100 : public Stream {
 		inline void _increment (void);
 		inline void _setDot (int, int, uint8_t);
 		inline void _setCursor (int, int);
-		inline void _setScroll (int);
+		inline void _setScroll (uint8_t);
 		inline uint8_t _getBits (int, int);
+		inline uint8_t _checkXY (int, int);
 		inline uint8_t _align (uint8_t);
 		inline uint8_t _clip (uint8_t);
 		// these are in the IO config files

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
-//  Font "HD44780U.H" for the Noritake GU128X64E-U100 VFD display
+//  Font "HD44780F.H" for the Noritake GU128X64E-U100 VFD display
 //  Copyright (c) 2012, 2015 Roger A. Krupski <rakrupski@verizon.net>
 //
 //  This program is free software: you can redistribute it and/or modify
@@ -18,19 +18,19 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef HD44780U_H
-#define HD44780U_H
+#ifndef HD44780F_H
+#define HD44780F_H
 
-#define hd44780u pgm_get_far_address(_hd44780u)
+#define hd44780f pgm_get_far_address(_hd44780f)
 
-static const uint8_t _hd44780u[] PROGMEM = {
+static const uint8_t _hd44780f[] PROGMEM = {
 
 	0x06, // width (base + 0)
 	0x08, // height (base + 1)
 	0x00, // horizontal gap (base + 2)
 	0x00, // vertical gap (base + 3)
 	0x20, // first char (base + 4)
-	0x7f, // last char (base + 5)
+	0xff, // last char (base + 5)
 	0x06, // bytes per char (base + 6)
 
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // SPACE 0x20
@@ -129,7 +129,7 @@ static const uint8_t _hd44780u[] PROGMEM = {
 	0x00, 0x41, 0x36, 0x08, 0x00, 0x00, // } 0x7D
 	0x10, 0x08, 0x08, 0x10, 0x08, 0x00, // ~ 0x7E
 	0x08, 0x1c, 0x2a, 0x08, 0x08, 0x00, // DEL 0x7F
-/***
+
 	0x14, 0x3e, 0x55, 0x41, 0x22, 0x00, // unicode 0xC280
 	0x78, 0x15, 0x14, 0x11, 0x80, 0x00, // unicode 0xC281
 	0x00, 0x50, 0x30, 0x00, 0x00, 0x00, // unicode 0xC282
@@ -258,7 +258,7 @@ static const uint8_t _hd44780u[] PROGMEM = {
 	0x0c, 0x50, 0x52, 0x51, 0x3c, 0x00, // unicode 0xC2FD
 	0x7f, 0x14, 0x22, 0x1c, 0x00, 0x00, // unicode 0xC2FE
 	0x0c, 0x51, 0x50, 0x51, 0x3c, 0x00, // unicode 0xC2FF
-***/
+
 };
 
 #endif
