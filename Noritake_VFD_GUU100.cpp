@@ -44,16 +44,16 @@ void Noritake_VFD_GUU100::init (void)
 	_next_y = 0; // y size of character cell in pixels
 	_hofs = 0; // horizontal offset
 	_vofs = 0; // vertical offset
-	_saveHofs = 0; // horizontal offset save
-	_saveVofs = 0; // vertical offset save
 	_inv = 0; // display invert yes/no
 	_fontData = 0; // invalidate font address pointer
 	_fontStart = 0; // invalidate font start pointer
-	_fontSave = 0; // clear out push/pop storage
 	_charWidth =  0; // character width
 	_charHeight = 0; // character height
 	_maxChars = 0; // max chars per line
 	_maxLines = 0; // max lines
+	_fontSave = 0; // init push/pop storage
+	_saveHofs = 0; // init horizontal offset save
+	_saveVofs = 0; // init vertical offset save
 	setDisplay (1); // turn display on
 	setBrightness (100); // default brightness and cathode on
 	clearScreen(); // clear screen
@@ -1062,7 +1062,7 @@ inline uint8_t Noritake_VFD_GUU100::_getBits (int x, int y)
 // check that x and y are legal
 inline uint8_t Noritake_VFD_GUU100::_checkXY (int x, int y)
 {
-	return ((x < (_displayWidth - 1)) && (y < (_displayHeight - 1)) && (x > -1) && (y > -1));
+	return (x < _displayWidth && y < _displayHeight - 0 && x >= 0 && y >= 0);
 }
 
 // align text at "chip" boundaries
